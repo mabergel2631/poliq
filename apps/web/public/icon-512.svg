@@ -1,0 +1,12 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#1e3a5f"/>
+
+  <!-- Shield shape -->
+  <path d="M 256 50 L 380 120 L 380 250 C 380 340 256 430 256 430 C 256 430 132 340 132 250 L 132 120 Z"
+        fill="none" stroke="white" stroke-width="8" stroke-linejoin="round"/>
+
+  <!-- PV Text -->
+  <text x="256" y="310" font-family="Arial, sans-serif" font-size="160" font-weight="bold"
+        fill="white" text-anchor="middle" dominant-baseline="middle">PV</text>
+</svg>

@@ -1,0 +1,64 @@
+{
+  "carrier": null,
+  "policy_number": "181585208",
+  "policy_type": "life",
+  "scope": "personal",
+  "coverage_amount": 1000000,
+  "deductible": null,
+  "renewal_date": null,
+  "effective_date": "2019-04-15",
+  "named_insured": "Michael Abergel",
+  "payment_schedule": "monthly",
+  "premium_amount": 137,
+  "contacts": [
+    {
+      "role": "broker",
+      "name": null,
+      "company": "SelectQuote Insurance Services",
+      "phone": "(800) 343-1985",
+      "email": null
+    },
+    {
+      "role": "customer_service",
+      "name": null,
+      "company": null,
+      "phone": "(800) 638-8428",
+      "email": "customerservice@bannerlife.com"
+    },
+    {
+      "role": "other",
+      "name": null,
+      "company": null,
+      "phone": "(818) 618-4000",
+      "email": null
+    }
+  ],
+  "inclusions": [],
+  "exclusions": [],
+  "details": [
+    {
+      "field_name": "face_value",
+      "field_value": "$1,000,000.00"
+    },
+    {
+      "field_name": "term_length",
+      "field_value": "10 years"
+    },
+    {
+      "field_name": "insured_name",
+      "field_value": "Michael Abergel"
+    },
+    {
+      "field_name": "beneficiary",
+      "field_value": "Joli Abergel"
+    },
+    {
+      "field_name": "contingent_beneficiary",
+      "field_value": "All surviving children of Michael Abergel equally"
+    },
+    {
+      "field_name": "policy_owner",
+      "field_value": "Michael Abergel"
+    }
+  ]
+}
