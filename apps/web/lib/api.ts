@@ -72,6 +72,7 @@ export type PolicyCreate = {
   nickname?: string | null;
   coverage_amount?: number | null;
   deductible?: number | null;
+  premium_amount?: number | null;
   renewal_date?: string | null;
 };
 
