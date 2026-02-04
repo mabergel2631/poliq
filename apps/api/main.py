@@ -28,13 +28,9 @@ from app.routes_files import router as files_router
 
 app = FastAPI(title="PoliQ API")
 
-from app.config import settings as _settings
-_default_origins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.6.117:3000"]
-_cors_origins = [o.strip() for o in _settings.cors_origins.split(",") if o.strip()] if _settings.cors_origins else _default_origins
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
