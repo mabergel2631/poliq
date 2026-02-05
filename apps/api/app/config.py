@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     s3_endpoint: str = "localhost:9000"
     s3_access_key: str
     s3_secret_key: str
-    s3_bucket: str = "poliq"
+    s3_bucket: str = "keeps"
 
     jwt_secret: str = "default-secret-change-in-production"
     jwt_algorithm: str = "HS256"

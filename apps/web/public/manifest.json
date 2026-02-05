@@ -1,6 +1,6 @@
 {
-  "name": "PoliQ",
-  "short_name": "PoliQ",
+  "name": "Keeps",
+  "short_name": "Keeps",
   "description": "Insurance policy management",
   "start_url": "/policies",
   "display": "standalone",

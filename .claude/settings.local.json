@@ -48,7 +48,11 @@
       "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo create poliq --private --source=. --remote=origin --push)",
       "Bash(git push)",
       "WebFetch(domain:poliq-production.up.railway.app)",
-      "WebFetch(domain:poliq-production-aaa9.up.railway.app)"
+      "WebFetch(domain:poliq-production-aaa9.up.railway.app)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo edit mabergel2631/poliq --visibility public)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo edit mabergel2631/poliq --visibility public --accept-visibility-change-consequences)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo rename keeps --repo mabergel2631/poliq --yes)",
+      "Bash(git remote set-url:*)"
     ]
   }
 }

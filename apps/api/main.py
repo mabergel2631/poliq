@@ -26,7 +26,7 @@ from app.routes_export import router as export_router
 from app.routes_sharing import router as sharing_router
 from app.routes_files import router as files_router
 
-app = FastAPI(title="PoliQ API")
+app = FastAPI(title="Keeps API")
 
 app.add_middleware(
     CORSMiddleware,
