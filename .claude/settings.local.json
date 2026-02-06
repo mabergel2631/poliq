@@ -54,7 +54,9 @@
       "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo rename keeps --repo mabergel2631/poliq --yes)",
       "Bash(git remote set-url:*)",
       "WebFetch(domain:keeps-app.vercel.app)",
-      "WebFetch(domain:keeps-app-six.vercel.app)"
+      "WebFetch(domain:keeps-app-six.vercel.app)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo view mabergel2631/keeps --json visibility)",
+      "Bash(npm audit:*)"
     ]
   }
 }
