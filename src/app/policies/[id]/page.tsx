@@ -240,8 +240,9 @@ export default function PolicyDetailPage() {
           reject(new Error(`Upload network error (status ${xhr.status})`));
         };
         const token = localStorage.getItem('pv_token');
-        const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'https://poliq-production.up.railway.app';
-        xhr.open('POST', `${apiBase}/files/direct-upload`);
+        const uploadUrl = 'https://poliq-production.up.railway.app/files/direct-upload';
+        console.log('[Upload] Sending to:', uploadUrl);
+        xhr.open('POST', uploadUrl);
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.send(formData);
       });
