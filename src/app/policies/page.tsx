@@ -146,7 +146,8 @@ export default function PoliciesPage() {
         formData.append('policy_id', String(newPolicy.id));
         formData.append('doc_type', 'policy');
         const tkn = localStorage.getItem('pv_token');
-        xhr.open('POST', '/api/files/direct-upload');
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE || 'https://poliq-production.up.railway.app';
+        xhr.open('POST', `${apiBase}/files/direct-upload`);
         if (tkn) xhr.setRequestHeader('Authorization', `Bearer ${tkn}`);
         xhr.send(formData);
       });
