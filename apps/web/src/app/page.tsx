@@ -24,13 +24,69 @@ export default function Home() {
 
   if (token) return null;
 
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
     <div style={{ minHeight: '100vh' }}>
+      {/* Navigation Header */}
+      <header style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        background: 'rgba(255,255,255,0.95)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid var(--color-border)',
+        padding: '12px 24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+      }}>
+        <div
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-primary)', cursor: 'pointer' }}
+        >
+          {APP_NAME}
+        </div>
+        <nav style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+          <span
+            onClick={() => scrollTo('features')}
+            style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}
+          >
+            Features
+          </span>
+          <span
+            onClick={() => scrollTo('about')}
+            style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}
+          >
+            About
+          </span>
+          <button
+            onClick={() => router.push('/login')}
+            style={{
+              padding: '8px 20px',
+              fontSize: 14,
+              fontWeight: 600,
+              backgroundColor: 'var(--color-primary)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer',
+            }}
+          >
+            Sign In
+          </button>
+        </nav>
+      </header>
+
       {/* Hero */}
       <div style={{
         background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-primary-light) 100%)',
         color: '#fff',
-        padding: '80px 24px',
+        padding: '120px 24px 80px',
         textAlign: 'center',
       }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
@@ -74,7 +130,7 @@ export default function Home() {
       </div>
 
       {/* Features */}
-      <div style={{ maxWidth: 960, margin: '0 auto', padding: '64px 24px' }}>
+      <div id="features" style={{ maxWidth: 960, margin: '0 auto', padding: '64px 24px' }}>
         <h2 style={{ textAlign: 'center', fontSize: 28, fontWeight: 700, margin: '0 0 8px', color: 'var(--color-primary)' }}>
           Everything you need
         </h2>
@@ -89,6 +145,23 @@ export default function Home() {
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>{f.desc}</p>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* About */}
+      <div id="about" style={{ background: 'var(--color-surface)', padding: '64px 24px' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', color: 'var(--color-primary)' }}>
+            About {APP_NAME}
+          </h2>
+          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 1.7, margin: '0 0 24px' }}>
+            We built {APP_NAME} to solve a simple problem: keeping track of insurance policies shouldn&apos;t be hard.
+            Whether it&apos;s auto, home, life, or business insurance, everything you need is now in one secure place.
+          </p>
+          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 1.7, margin: 0 }}>
+            Upload your policy documents, and our AI automatically extracts the important details.
+            Get reminders before renewals, track your premiums, and share access with family members — all from one dashboard.
+          </p>
         </div>
       </div>
 
