@@ -373,8 +373,40 @@ export default function PoliciesPage() {
                 >
                   <div style={{ fontSize: 28 }}>{POLICY_TYPE_CONFIG[p.policy_type]?.icon || '📋'}</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
-                      {p.nickname || p.carrier}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>
+                        {p.nickname || p.carrier}
+                      </span>
+                      {/* Sharing Indicator */}
+                      {p.shared_with && p.shared_with.length > 0 ? (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '2px 8px',
+                          backgroundColor: '#e0f2fe',
+                          color: '#0369a1',
+                          borderRadius: 12,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}>
+                          👥 Shared ({p.shared_with.length})
+                        </span>
+                      ) : (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '2px 8px',
+                          backgroundColor: '#f3f4f6',
+                          color: '#6b7280',
+                          borderRadius: 12,
+                          fontSize: 11,
+                          fontWeight: 500,
+                        }}>
+                          🔒 Private
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
                       {POLICY_TYPE_CONFIG[p.policy_type]?.label || p.policy_type} • {p.policy_number}

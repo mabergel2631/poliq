@@ -481,7 +481,45 @@ export default function PolicyDetailPage() {
                   {policy.nickname || `${policy.carrier} - ${policy.policy_type}`}
                 </h1>
                 {policy.nickname && <p style={{ margin: '0 0 4px', color: 'var(--color-text-secondary)', fontSize: 15 }}>{policy.carrier} - {policy.policy_type}</p>}
-                <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 14 }}>Policy # <span style={{ fontFamily: 'monospace' }}>{policy.policy_number}</span></p>
+                <p style={{ margin: '0 0 8px', color: 'var(--color-text-muted)', fontSize: 14 }}>Policy # <span style={{ fontFamily: 'monospace' }}>{policy.policy_number}</span></p>
+
+                {/* Sharing Status - Always Visible */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    fontSize: 13,
+                    color: shares.length > 0 ? 'var(--color-text-secondary)' : 'var(--color-text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    {shares.length > 0 ? (
+                      <>
+                        <span style={{ fontSize: 14 }}>👥</span>
+                        <span>
+                          Shared with: {shares.map((s, i) => (
+                            <span key={s.id}>
+                              <strong>{s.shared_with_email.split('@')[0]}</strong>
+                              <span style={{ color: 'var(--color-text-muted)', fontSize: 12 }}> ({s.permission})</span>
+                              {i < shares.length - 1 ? ', ' : ''}
+                            </span>
+                          ))}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 14 }}>🔒</span>
+                        <span>Private — only you have access</span>
+                      </>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowShareForm(!showShareForm)}
+                    className="btn btn-outline"
+                    style={{ padding: '4px 12px', fontSize: 12 }}
+                  >
+                    {showShareForm ? 'Cancel' : shares.length > 0 ? 'Manage Access' : 'Share'}
+                  </button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <span className={`badge badge-${policy.scope}`}>{policy.scope}</span>
@@ -490,6 +528,67 @@ export default function PolicyDetailPage() {
                 <button onClick={startEdit} className="btn btn-primary">Edit Policy</button>
               </div>
             </div>
+
+            {/* Inline Share Form - appears below header when toggled */}
+            {showShareForm && (
+              <div style={{ marginTop: 20, padding: 20, backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>Share This Policy</h3>
+                <form onSubmit={async (e) => { e.preventDefault(); try { await sharingApi.share(policyId, shareForm); setShowShareForm(false); setShareForm({ shared_with_email: '', permission: 'view', role_label: null, expires_at: null }); setShares(await sharingApi.listShares(policyId)); toast('Invite sent', 'success'); } catch (err: any) { setError(err.message); } }}>
+                  <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={labelStyle}>Email</label>
+                      <input type="email" value={shareForm.shared_with_email} onChange={e => setShareForm({ ...shareForm, shared_with_email: e.target.value })} required style={inputStyle} placeholder="user@example.com" />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Permission</label>
+                      <select value={shareForm.permission} onChange={e => setShareForm({ ...shareForm, permission: e.target.value })} style={inputStyle}>
+                        <option value="view">View Only</option>
+                        <option value="edit">Can Edit</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Role (optional)</label>
+                      <select value={shareForm.role_label || ''} onChange={e => setShareForm({ ...shareForm, role_label: e.target.value || null })} style={inputStyle}>
+                        <option value="">No label</option>
+                        <option value="spouse">Spouse</option>
+                        <option value="child">Child</option>
+                        <option value="parent">Parent</option>
+                        <option value="attorney">Attorney</option>
+                        <option value="cpa">CPA / Accountant</option>
+                        <option value="caregiver">Caregiver</option>
+                        <option value="broker">Broker</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Expires (optional)</label>
+                      <input type="date" value={shareForm.expires_at || ''} onChange={e => setShareForm({ ...shareForm, expires_at: e.target.value || null })} style={inputStyle} />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn btn-accent" style={{ marginTop: 12, padding: '8px 20px' }}>Send Invite</button>
+                </form>
+
+                {/* Current Shares Management */}
+                {shares.length > 0 && (
+                  <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+                    <h4 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Current Access</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {shares.map(s => (
+                        <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, backgroundColor: '#fff', borderRadius: 4, border: '1px solid var(--color-border)' }}>
+                          <div>
+                            <span style={{ fontWeight: 500 }}>{s.shared_with_email}</span>
+                            <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 3, fontSize: 11, fontWeight: 600, backgroundColor: s.permission === 'edit' ? '#dbeafe' : '#f0f0f0', color: s.permission === 'edit' ? '#1e40af' : '#555' }}>{s.permission}</span>
+                            {s.role_label && <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 3, fontSize: 11, fontWeight: 600, backgroundColor: '#f5f3ff', color: '#6d28d9' }}>{s.role_label}</span>}
+                            {!s.accepted && <span style={{ marginLeft: 8, fontSize: 11, color: '#999' }}>pending</span>}
+                          </div>
+                          <button onClick={async () => { await sharingApi.revoke(s.id); setShares(prev => prev.filter(x => x.id !== s.id)); toast('Access revoked', 'success'); }} className="btn btn-danger" style={{ padding: '4px 10px', fontSize: 12 }}>Revoke</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--color-border)' }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Premium</div>
@@ -1090,73 +1189,6 @@ export default function PolicyDetailPage() {
                 </div>
               );
             })}
-          </div>
-        )}
-      </div>
-
-      {/* Sharing */}
-      <div className="card" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 className="section-title" style={{ margin: 0 }}>Sharing</h2>
-          <button onClick={() => setShowShareForm(!showShareForm)} className="btn btn-primary">
-            {showShareForm ? 'Cancel' : '+ Share Policy'}
-          </button>
-        </div>
-
-        {showShareForm && (
-          <form onSubmit={async (e) => { e.preventDefault(); try { await sharingApi.share(policyId, shareForm); setShowShareForm(false); setShareForm({ shared_with_email: '', permission: 'view', role_label: null, expires_at: null }); setShares(await sharingApi.listShares(policyId)); toast('Invite sent', 'success'); } catch (err: any) { setError(err.message); } }} style={{ padding: 16, marginBottom: 16, backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-            <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={labelStyle}>Email</label>
-                <input type="email" value={shareForm.shared_with_email} onChange={e => setShareForm({ ...shareForm, shared_with_email: e.target.value })} required style={inputStyle} placeholder="user@example.com" />
-              </div>
-              <div>
-                <label style={labelStyle}>Permission</label>
-                <select value={shareForm.permission} onChange={e => setShareForm({ ...shareForm, permission: e.target.value })} style={inputStyle}>
-                  <option value="view">View Only</option>
-                  <option value="edit">Can Edit</option>
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Role</label>
-                <select value={shareForm.role_label || ''} onChange={e => setShareForm({ ...shareForm, role_label: e.target.value || null })} style={inputStyle}>
-                  <option value="">No label</option>
-                  <option value="spouse">Spouse</option>
-                  <option value="child">Child</option>
-                  <option value="parent">Parent</option>
-                  <option value="attorney">Attorney</option>
-                  <option value="cpa">CPA / Accountant</option>
-                  <option value="caregiver">Caregiver</option>
-                  <option value="broker">Broker</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Expires (optional)</label>
-                <input type="date" value={shareForm.expires_at || ''} onChange={e => setShareForm({ ...shareForm, expires_at: e.target.value || null })} style={inputStyle} />
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }}>Send Invite</button>
-          </form>
-        )}
-
-        {shares.length === 0 ? (
-          <p style={{ color: '#999', margin: 0 }}>Not shared with anyone yet.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {shares.map(s => (
-              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 10, backgroundColor: '#fafafa', borderRadius: 4 }}>
-                <div>
-                  <span style={{ fontWeight: 500 }}>{s.shared_with_email}</span>
-                  <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 3, fontSize: 11, fontWeight: 600, backgroundColor: s.permission === 'edit' ? '#dbeafe' : '#f0f0f0', color: s.permission === 'edit' ? '#1e40af' : '#555' }}>{s.permission}</span>
-                  {s.role_label && <span style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 3, fontSize: 11, fontWeight: 600, backgroundColor: '#f5f3ff', color: '#6d28d9' }}>{s.role_label}</span>}
-                  {s.accepted && <span style={{ marginLeft: 8, fontSize: 11, color: '#059669' }}>accepted</span>}
-                  {!s.accepted && <span style={{ marginLeft: 8, fontSize: 11, color: '#999' }}>pending</span>}
-                  {s.expires_at && <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--color-warning)' }}>expires {s.expires_at}</span>}
-                </div>
-                <button onClick={async () => { await sharingApi.revoke(s.id); setShares(prev => prev.filter(x => x.id !== s.id)); toast('Access revoked', 'success'); }} className="btn btn-danger">Revoke</button>
-              </div>
-            ))}
           </div>
         )}
       </div>
