@@ -43,7 +43,7 @@ export default function Home() {
           {APP_NAME}
         </div>
         <nav style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          <span onClick={() => scrollTo('how-it-works')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>How It Works</span>
+          <span onClick={() => scrollTo('how-it-works')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>How it works</span>
           <span onClick={() => scrollTo('features')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Features</span>
           <span onClick={() => scrollTo('security')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Security</span>
           <button
@@ -59,7 +59,7 @@ export default function Home() {
               cursor: 'pointer',
             }}
           >
-            Sign In
+            Sign in
           </button>
         </nav>
       </header>
@@ -75,10 +75,10 @@ export default function Home() {
       }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
           <h1 style={{ fontSize: 44, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-            Know exactly what you&apos;re covered for — instantly.
+            Know your coverage. Before you need it.
           </h1>
           <p style={{ fontSize: 18, opacity: 0.9, margin: '0 0 32px', lineHeight: 1.7, maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}>
-            {APP_NAME} securely stores your insurance policies, extracts key details automatically, and reminds you before renewals and deadlines — so your coverage is always organized, clear, and ready when you need it.
+            {APP_NAME} turns insurance PDFs into structured, searchable coverage information—limits, deductibles, renewals, and key contacts—so you can make decisions quickly and avoid surprises.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
             <button
@@ -109,7 +109,7 @@ export default function Home() {
                 cursor: 'pointer',
               }}
             >
-              See How It Works
+              See how it works
             </button>
           </div>
           <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, opacity: 0.8 }}>
@@ -120,85 +120,91 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. TRUST STRIP */}
-      <section style={{ background: 'var(--color-surface)', padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap', fontSize: 14, color: 'var(--color-text-secondary)' }}>
-          <span>Designed for sensitive financial documents</span>
-          <span>Automatic data extraction from PDFs</span>
-          <span>Built for clarity and preparedness</span>
-        </div>
-      </section>
-
-      {/* 3. PROBLEM SECTION */}
+      {/* 2. PROBLEM SECTION */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 24px', color: 'var(--color-text)' }}>
-            Insurance shouldn&apos;t feel complicated.
+            Insurance shouldn&apos;t be a scavenger hunt.
           </h2>
           <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 1.8, margin: '0 0 32px' }}>
-            Most policies are scattered across emails, drives, and folders. When you actually need them:
+            Policies live across email threads, portals, PDFs, and folders. When something happens, the questions are always the same:
           </p>
-          <div style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto 32px', fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 2 }}>
-            <div>You don&apos;t know your deductible</div>
-            <div>You can&apos;t find the right version</div>
-            <div>Renewal dates sneak up on you</div>
-            <div>Important details are buried in long PDFs</div>
+          <div style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto 32px', fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 2.2 }}>
+            <div>• What am I covered for?</div>
+            <div>• What&apos;s my deductible right now?</div>
+            <div>• Who do I call?</div>
+            <div>• When does this renew—and what changed?</div>
           </div>
-          <p style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-primary)', margin: 0 }}>
-            {APP_NAME} fixes this.
+          <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-primary)', margin: 0 }}>
+            {APP_NAME} gives you one clear answer: your coverage, organized and understood.
           </p>
         </div>
       </section>
 
-      {/* 4. HOW IT WORKS */}
+      {/* 3. HOW IT WORKS */}
       <section id="how-it-works" style={{ padding: '80px 24px', background: 'var(--color-surface)' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 48px', textAlign: 'center', color: 'var(--color-text)' }}>
-            How It Works
+            How it works
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 32 }}>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>1</div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Upload</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Add policies</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Upload policies or documents — PDFs, scans, or photos.
+                Upload PDFs, scans, photos—or forward documents. (Carrier connections come later.)
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>2</div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>{APP_NAME} Understands</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>{APP_NAME} extracts what matters</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Automatically extracts carrier, policy number, coverage limits, deductibles, and renewal dates.
+                {APP_NAME} pulls key fields into a consistent format: carrier, policy number, limits, deductibles, and renewal dates.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>3</div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Stay Ready</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Stay continuously ready</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Search instantly, track renewals, and receive reminders before deadlines.
+                Search instantly, track renewals, share safely, and keep everything current.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. CORE FEATURES */}
-      <section id="features" style={{ padding: '80px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', textAlign: 'center', color: 'var(--color-text)' }}>
-            One intelligent dashboard for your entire insurance life.
+      {/* 4. CORE VALUE */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', color: 'var(--color-text)' }}>
+            Not a dashboard. A coverage intelligence layer.
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', textAlign: 'center', margin: '0 0 48px' }}>
-            Everything you need to stay organized and prepared.
+          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 32px', lineHeight: 1.7 }}>
+            {APP_NAME} isn&apos;t just a place to store policies. It turns documents into usable knowledge—so you can see what you have, what&apos;s missing, and what needs attention.
           </p>
+          <div style={{ textAlign: 'left', maxWidth: 450, margin: '0 auto', fontSize: 15, color: 'var(--color-text)', lineHeight: 2.2 }}>
+            <div>• Limits and deductibles in plain view</div>
+            <div>• Renewal dates with reminders</div>
+            <div>• Contacts and claim details attached to the policy</div>
+            <div>• A single place to share with family or advisors (with permissions)</div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. FEATURES */}
+      <section id="features" style={{ padding: '80px 24px', background: 'var(--color-surface)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 48px', textAlign: 'center', color: 'var(--color-text)' }}>
+            What {APP_NAME} does
+          </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
             {[
-              { title: 'Policy Management', desc: 'All policies in one place — auto, home, life, umbrella, and more.' },
-              { title: 'Automatic PDF Extraction', desc: 'No manual data entry. Upload and let AI do the work.' },
-              { title: 'Instant Search', desc: 'Find answers fast. Search by carrier, coverage, or any detail.' },
-              { title: 'Renewal Reminders', desc: 'Never miss important dates. Get notified before deadlines.' },
-              { title: 'Claims Management', desc: 'Keep claim documents organized and track status.' },
-              { title: 'Secure Sharing', desc: 'Controlled access for family members or advisors.' },
+              { title: 'Policy clarity', desc: 'Auto, home, life, umbrella, liability, and more in one place.' },
+              { title: 'Automatic extraction', desc: 'No manual retyping. Upload and Keeps captures key details.' },
+              { title: 'Instant search', desc: 'Find policies by carrier, policy number, limits, or any extracted field.' },
+              { title: 'Renewal awareness', desc: 'Reminders before renewals and critical deadlines.' },
+              { title: 'Claims organization', desc: 'Keep claim documents and status tied to the policy.' },
+              { title: 'Secure sharing', desc: 'Permissioned access for family members and advisors.' },
             ].map(f => (
               <div key={f.title} className="card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>{f.title}</h3>
@@ -209,29 +215,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. DIFFERENTIATION */}
-      <section style={{ padding: '80px 24px', background: 'var(--color-surface)' }}>
+      {/* 6. COMPARISON */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
           <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 48px', textAlign: 'center', color: 'var(--color-text)' }}>
-            Not just storage — {APP_NAME} understands your policies.
+            {APP_NAME} vs. folders
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
             <div className="card" style={{ padding: 32 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-text-muted)' }}>Traditional Storage</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-text-muted)' }}>Traditional storage</h3>
               <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text-secondary)', lineHeight: 2 }}>
-                <li>Files in scattered folders</li>
+                <li>Files scattered</li>
                 <li>Manual searching</li>
-                <li>No alerts or reminders</li>
-                <li>Details buried in PDFs</li>
+                <li>No reminders</li>
+                <li>Key details buried</li>
               </ul>
             </div>
             <div className="card" style={{ padding: 32, borderColor: 'var(--color-primary)', borderWidth: 2 }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-primary)' }}>{APP_NAME}</h3>
               <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text)', lineHeight: 2 }}>
-                <li>Extracts key information automatically</li>
-                <li>Structured, searchable data</li>
-                <li>Proactive renewal reminders</li>
-                <li>Everything at a glance</li>
+                <li>Extracted, structured data</li>
+                <li>Search by what matters</li>
+                <li>Proactive reminders</li>
+                <li>Clear coverage view</li>
               </ul>
             </div>
           </div>
@@ -239,20 +245,20 @@ export default function Home() {
       </section>
 
       {/* 7. SECURITY */}
-      <section id="security" style={{ padding: '80px 24px', background: '#fff' }}>
+      <section id="security" style={{ padding: '80px 24px', background: 'var(--color-surface)' }}>
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', color: 'var(--color-text)' }}>
-            Security you can trust.
+            Security built for sensitive documents
           </h2>
           <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 40px', lineHeight: 1.7 }}>
-            Your insurance documents contain sensitive information. We treat them that way.
+            Insurance documents contain personal and financial details. {APP_NAME} is designed to treat them like it.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, textAlign: 'left' }}>
             {[
-              { title: 'Encryption', desc: 'Data encrypted at rest and in transit' },
-              { title: 'Permission-Based Sharing', desc: 'Control who sees what' },
-              { title: 'Data Ownership', desc: 'Your data belongs to you' },
-              { title: 'Privacy-First Design', desc: 'Built with privacy as a core principle' },
+              { title: 'Encryption', desc: 'Data encrypted in transit and at rest' },
+              { title: 'Permissioned sharing', desc: 'Control who sees what' },
+              { title: 'Data ownership', desc: 'Your data stays yours' },
+              { title: 'Privacy-first design', desc: 'Built with privacy as a core principle' },
             ].map(s => (
               <div key={s.title} style={{ padding: 16 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 4px', color: 'var(--color-text)' }}>{s.title}</h4>
@@ -263,32 +269,32 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. USE CASES */}
-      <section style={{ padding: '80px 24px', background: 'var(--color-surface)' }}>
+      {/* 8. AUDIENCE */}
+      <section style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 48px', textAlign: 'center', color: 'var(--color-text)' }}>
-            Built for people who value preparedness.
+            Built for people who want clarity
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 32 }}>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>👨‍👩‍👧‍👦</div>
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>Families</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Prepared for emergencies and life events.
+                Prepared for the moments that matter.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>💼</div>
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>Professionals</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Organized risk management for your business.
+                Organized coverage and renewal visibility.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>📋</div>
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>Anyone with Multiple Policies</h3>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>Anyone with multiple policies</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Clear overview without chaos.
+                One view, no chaos.
               </p>
             </div>
           </div>
@@ -304,7 +310,7 @@ export default function Home() {
       }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 24px' }}>
-            Be ready for the moments that matter.
+            Be ready—without doing extra work.
           </h2>
           <button
             onClick={() => router.push('/login')}
@@ -326,7 +332,10 @@ export default function Home() {
 
       {/* Footer */}
       <footer style={{ padding: '24px', textAlign: 'center', borderTop: '1px solid var(--color-border)', color: 'var(--color-text-muted)', fontSize: 13 }}>
-        {APP_NAME} — Secure insurance policy management
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, marginBottom: 12 }}>
+          <span onClick={() => router.push('/privacy')} style={{ cursor: 'pointer' }}>Privacy</span>
+        </div>
+        {APP_NAME} — Coverage intelligence for your insurance
       </footer>
     </div>
   );
