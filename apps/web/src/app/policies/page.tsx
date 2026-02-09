@@ -449,9 +449,22 @@ export default function PoliciesPage() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
-                    style={{ padding: 8, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: 16 }}
+                    className="btn btn-outline"
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 12,
+                      color: 'var(--color-danger, #dc2626)',
+                      borderColor: 'var(--color-danger, #dc2626)',
+                      backgroundColor: 'transparent',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#fef2f2';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
-                    ×
+                    Delete
                   </button>
                 </div>
               ))}
