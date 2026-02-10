@@ -1128,6 +1128,28 @@ export default function PolicyDetailPage() {
               📞 Call Claims: {claimsContact.phone}
             </a>
 
+            <button
+              onClick={() => router.push('/emergency')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                width: '100%',
+                marginTop: 12,
+                padding: '12px 24px',
+                backgroundColor: '#fff',
+                color: '#991b1b',
+                border: '2px solid #dc2626',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              🆘 View Emergency Card
+            </button>
+
             {policy.deductible && (
               <p style={{ margin: '12px 0 0', fontSize: 12, color: '#991b1b', textAlign: 'center' }}>
                 Remember: Your deductible is ${policy.deductible.toLocaleString()}
