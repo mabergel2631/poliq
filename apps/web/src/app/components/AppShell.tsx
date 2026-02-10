@@ -6,6 +6,7 @@ import { useAuth } from '../../../lib/auth';
 import { APP_NAME } from '../config';
 
 const NAV_ITEMS = [
+  { href: '/', label: 'Home', icon: '🏠' },
   { href: '/policies', label: 'Policies', icon: '📋' },
   { href: '/emergency', label: 'Emergency', icon: '🚨', urgent: true },
   { href: '/audit', label: 'Audit Log', icon: '📜' },
@@ -65,14 +66,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           flexShrink: 0,
         }}
       >
-        <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <div
+          onClick={() => router.push('/')}
+          style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
+        >
           <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>{APP_NAME}</div>
           <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>Insurance Manager</div>
         </div>
 
         <nav style={{ flex: 1, padding: '12px 8px' }}>
           {NAV_ITEMS.map(item => {
-            const active = pathname === item.href || (item.href !== '/policies' && pathname.startsWith(item.href));
+            const isHome = item.href === '/';
+            const active = pathname === item.href || (!isHome && item.href !== '/policies' && pathname.startsWith(item.href));
             const isPolActive = item.href === '/policies' && (pathname === '/policies' || (pathname.startsWith('/policies/') && !pathname.startsWith('/policies/compare')));
             const isActive = active || isPolActive;
             const isUrgent = 'urgent' in item && item.urgent;

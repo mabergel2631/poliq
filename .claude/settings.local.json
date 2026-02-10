@@ -62,7 +62,9 @@
       "Bash(find:*)",
       "Bash(railway status:*)",
       "Bash(railway whoami:*)",
-      "Bash(railway login:*)"
+      "Bash(railway login:*)",
+      "WebSearch",
+      "WebFetch(domain:policynest.com)"
     ]
   }
 }
