@@ -5,6 +5,61 @@ Defines coverage categories, what policies provide them, and rules for identifyi
 
 from dataclasses import dataclass
 from typing import Optional
+import re
+
+
+# Common policy exclusions to scan for and warn users about
+EXCLUSION_KEYWORDS = {
+    "flood": {
+        "keywords": ["flood", "flooding", "flood damage", "surface water", "rising water"],
+        "name": "Flood Exclusion",
+        "description": "Flood damage is typically excluded from standard home insurance.",
+        "recommendation": "Consider separate flood insurance through NFIP or private insurers, especially if you're in a flood-prone area.",
+        "applies_to": ["home", "renters"],
+    },
+    "earthquake": {
+        "keywords": ["earthquake", "earth movement", "seismic", "tremor"],
+        "name": "Earthquake Exclusion",
+        "description": "Earthquake damage is typically excluded from standard home insurance.",
+        "recommendation": "Consider earthquake insurance if you live in a seismically active region.",
+        "applies_to": ["home", "renters"],
+    },
+    "sewer_backup": {
+        "keywords": ["sewer backup", "sewer", "drain backup", "sump pump", "water backup"],
+        "name": "Sewer/Water Backup Exclusion",
+        "description": "Sewer and drain backup damage may not be covered by your policy.",
+        "recommendation": "Ask your agent about adding water backup coverage - it's usually inexpensive and covers a common claim type.",
+        "applies_to": ["home", "renters"],
+    },
+    "mold": {
+        "keywords": ["mold", "mildew", "fungus", "fungi", "spores"],
+        "name": "Mold Exclusion",
+        "description": "Mold damage and remediation may be excluded or have low limits.",
+        "recommendation": "Review your mold coverage limits. Mold remediation can be very expensive.",
+        "applies_to": ["home", "renters"],
+    },
+    "wear_and_tear": {
+        "keywords": ["wear and tear", "gradual deterioration", "maintenance", "neglect", "lack of maintenance"],
+        "name": "Maintenance/Wear Exclusion",
+        "description": "Damage from lack of maintenance or normal wear is excluded.",
+        "recommendation": "Regular home maintenance prevents claims from being denied. Document your upkeep.",
+        "applies_to": ["home"],
+    },
+    "business_use": {
+        "keywords": ["business use", "commercial use", "livery", "rideshare", "uber", "lyft", "delivery"],
+        "name": "Business/Commercial Use Exclusion",
+        "description": "Using your vehicle for business purposes may void coverage.",
+        "recommendation": "If you do rideshare or delivery, you need commercial or rideshare coverage.",
+        "applies_to": ["auto"],
+    },
+    "intentional_acts": {
+        "keywords": ["intentional", "criminal act", "illegal act", "fraud"],
+        "name": "Intentional Acts Exclusion",
+        "description": "Intentional damage or illegal acts are not covered.",
+        "recommendation": "This is standard. Just be aware coverage requires accidental loss.",
+        "applies_to": ["auto", "home", "renters"],
+    },
+}
 
 
 @dataclass
@@ -438,6 +493,60 @@ def analyze_coverage_gaps(
                     "category": "incomplete_data",
                     "policy_id": policy.get("id")
                 })
+
+    # Scan for exclusion keywords in policy details
+    exclusions_found = set()  # Track unique exclusions to avoid duplicates
+    for policy in policies:
+        ptype = (policy.get("policy_type") or "").lower()
+        details = policy.get("details", [])
+
+        # Combine all detail text for scanning
+        detail_text = " ".join([
+            f"{d.get('field_name', '')} {d.get('field_value', '')}"
+            for d in details
+        ]).lower()
+
+        # Also scan carrier name and any notes
+        detail_text += f" {policy.get('carrier', '')} {policy.get('notes', '')}".lower()
+
+        for excl_id, excl_info in EXCLUSION_KEYWORDS.items():
+            # Skip if this exclusion doesn't apply to this policy type
+            if ptype not in excl_info.get("applies_to", []):
+                continue
+
+            # Check if any keywords match
+            for keyword in excl_info["keywords"]:
+                if keyword.lower() in detail_text:
+                    exclusion_key = f"{excl_id}_{policy.get('id')}"
+                    if exclusion_key not in exclusions_found:
+                        exclusions_found.add(exclusion_key)
+                        gaps.append({
+                            "id": f"exclusion_{excl_id}_{policy.get('id')}",
+                            "name": excl_info["name"],
+                            "severity": "info",
+                            "description": excl_info["description"],
+                            "recommendation": excl_info["recommendation"],
+                            "category": "exclusion_warning",
+                            "policy_id": policy.get("id")
+                        })
+                    break  # Only add once per exclusion type per policy
+
+    # For home policies, proactively warn about common exclusions even if not found in text
+    # These are almost universal exclusions that users should be aware of
+    home_policies = [p for p in policies if (p.get("policy_type") or "").lower() in ("home", "renters")]
+    for hp in home_policies:
+        policy_id = hp.get("id")
+        # Check if we already warned about flood for this policy
+        if f"flood_{policy_id}" not in exclusions_found:
+            gaps.append({
+                "id": f"exclusion_flood_reminder_{policy_id}",
+                "name": "Flood Coverage Reminder",
+                "severity": "info",
+                "description": "Standard home/renters policies do NOT cover flood damage.",
+                "recommendation": "If you're in a flood-prone area, consider NFIP or private flood insurance.",
+                "category": "exclusion_warning",
+                "policy_id": policy_id
+            })
 
     # Sort by severity
     severity_order = {"high": 0, "medium": 1, "low": 2, "info": 3}

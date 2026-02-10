@@ -7,6 +7,105 @@ import { policiesApi, contactsApi, documentsApi, policyDetailsApi, iceApi, Polic
 import { PolicyListSkeleton } from '../components/Skeleton';
 import { APP_NAME } from '../config';
 
+// Emergency Playbook - step-by-step instructions by policy type
+const EMERGENCY_PLAYBOOK: Record<string, { title: string; steps: string[]; tip?: string }> = {
+  auto: {
+    title: '🚗 Auto Accident Checklist',
+    steps: [
+      'Check for injuries - call 911 if needed',
+      'Move to safety if possible',
+      'Take photos of all vehicles, damage, license plates, and the scene',
+      'Exchange info: name, phone, insurance, license plate',
+      'Get witness contact info if available',
+      'Do NOT admit fault or apologize',
+      'File police report if required by your state',
+      'Call your claims line (below)',
+    ],
+    tip: 'Most insurers have a 24-48 hour reporting window. Report even minor incidents.',
+  },
+  home: {
+    title: '🏠 Home Damage Checklist',
+    steps: [
+      'Ensure everyone is safe - evacuate if necessary',
+      'Prevent further damage (tarp roof, turn off water, etc.)',
+      'Document everything with photos and video BEFORE cleanup',
+      'Make a detailed inventory of damaged items',
+      'Save receipts for emergency repairs and temporary housing',
+      'Do NOT throw away damaged items until adjuster sees them',
+      'Call your claims line (below)',
+    ],
+    tip: 'Keep all receipts. Emergency repairs and temporary living expenses may be covered.',
+  },
+  health: {
+    title: '🏥 Medical Emergency Checklist',
+    steps: [
+      'Get emergency care first - authorization can wait',
+      'For non-emergencies: call to verify coverage before treatment',
+      'Know your plan: in-network vs out-of-network costs',
+      'Request itemized bills and review for errors',
+      'Appeal denied claims - many are overturned',
+    ],
+    tip: 'Emergency care cannot be denied. Focus on treatment first, paperwork later.',
+  },
+  life: {
+    title: '❤️ Life Insurance Claim Guide',
+    steps: [
+      'Obtain certified copies of death certificate (you\'ll need 5-10)',
+      'Locate the policy document or contact the carrier',
+      'Notify the insurance company of the death',
+      'Complete claim forms (carrier will provide)',
+      'Submit: claim form, death certificate, policy (if available)',
+      'Payout typically within 30-60 days of complete submission',
+    ],
+    tip: 'Beneficiaries should file claims. Proceeds are generally tax-free.',
+  },
+  liability: {
+    title: '🛡️ Liability Claim Checklist',
+    steps: [
+      'Do NOT admit fault or make statements',
+      'Document the incident with photos and notes',
+      'Gather witness information',
+      'Report to your insurer immediately',
+      'Forward any legal documents to your insurer right away',
+      'Let your insurer handle communications',
+    ],
+    tip: 'Your insurer will provide legal defense if you\'re sued. Report early.',
+  },
+  umbrella: {
+    title: '☂️ Umbrella Policy Claim',
+    steps: [
+      'Report to your primary policy first (auto/home)',
+      'Notify your umbrella carrier of potential large claims',
+      'Umbrella kicks in when primary limits are exhausted',
+      'Keep all documentation from the primary claim',
+    ],
+    tip: 'Umbrella coverage activates after your auto/home limits are exceeded.',
+  },
+  renters: {
+    title: '🏢 Renters Insurance Checklist',
+    steps: [
+      'Document damage with photos and video',
+      'Make a list of damaged/stolen items with values',
+      'Report theft to police and get a report number',
+      'Notify your landlord of the incident',
+      'Call your claims line (below)',
+    ],
+    tip: 'Renters insurance covers your belongings, not the building structure.',
+  },
+};
+
+const DEFAULT_PLAYBOOK = {
+  title: '📋 General Claims Checklist',
+  steps: [
+    'Document the incident with photos and notes',
+    'Gather any relevant receipts or records',
+    'Report the claim promptly',
+    'Keep copies of all correspondence',
+    'Follow up if you don\'t hear back within a week',
+  ],
+  tip: 'Report claims promptly. Delays can complicate the process.',
+};
+
 type PolicyEmergencyData = {
   policy: Policy;
   contacts: Contact[];
@@ -468,6 +567,49 @@ export default function EmergencyPage() {
 
                 {expanded && (
                   <div style={{ padding: '16px 20px' }}>
+                    {/* Emergency Playbook */}
+                    {(() => {
+                      const playbook = EMERGENCY_PLAYBOOK[p.policy_type.toLowerCase()] || DEFAULT_PLAYBOOK;
+                      return (
+                        <div style={{
+                          backgroundColor: '#fef3c7',
+                          border: '1px solid #fcd34d',
+                          borderRadius: 'var(--radius-md)',
+                          padding: 16,
+                          marginBottom: 16,
+                        }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#92400e' }}>
+                            {playbook.title}
+                          </div>
+                          <ol style={{
+                            margin: 0,
+                            paddingLeft: 20,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                          }}>
+                            {playbook.steps.map((step, i) => (
+                              <li key={i} style={{ fontSize: 13, color: '#78350f', lineHeight: 1.4 }}>
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                          {playbook.tip && (
+                            <div style={{
+                              marginTop: 12,
+                              paddingTop: 12,
+                              borderTop: '1px solid #fcd34d',
+                              fontSize: 12,
+                              color: '#92400e',
+                              fontStyle: 'italic',
+                            }}>
+                              💡 {playbook.tip}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
                     {/* Quick-copy fields */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
                       <CopyField

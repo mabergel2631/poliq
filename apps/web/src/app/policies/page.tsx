@@ -169,6 +169,20 @@ export default function PoliciesPage() {
   const typeCounts: Record<string, number> = {};
   activePolicies.forEach(p => { typeCounts[p.policy_type] = (typeCounts[p.policy_type] || 0) + 1; });
 
+  // Compute policy-level status based on gaps
+  const getPolicyStatus = (policyId: number): { status: 'ok' | 'warning' | 'alert'; label: string; color: string; bgColor: string } => {
+    const policyGaps = coverageGaps.filter(g =>
+      g.policy_id === policyId ||
+      (g.id && g.id.includes(`_${policyId}`))
+    );
+    const hasHigh = policyGaps.some(g => g.severity === 'high');
+    const hasMedium = policyGaps.some(g => g.severity === 'medium');
+
+    if (hasHigh) return { status: 'alert', label: 'Needs Attention', color: '#991b1b', bgColor: '#fee2e2' };
+    if (hasMedium) return { status: 'warning', label: 'Review Suggested', color: '#92400e', bgColor: '#fef3c7' };
+    return { status: 'ok', label: 'Good', color: '#166534', bgColor: '#dcfce7' };
+  };
+
   // Search filter
   const q = search.toLowerCase().trim();
   const filteredPolicies = activePolicies.filter(p => {
@@ -444,7 +458,9 @@ export default function PoliciesPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filteredPolicies.map(p => (
+              {filteredPolicies.map(p => {
+                const policyStatus = getPolicyStatus(p.id);
+                return (
                 <div
                   key={p.id}
                   onClick={() => router.push(`/policies/${p.id}`)}
@@ -454,22 +470,43 @@ export default function PoliciesPage() {
                     gap: 16,
                     padding: '20px 24px',
                     backgroundColor: '#fff',
-                    border: '1px solid var(--color-border)',
+                    border: `1px solid ${policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'}`,
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     transition: 'border-color 0.15s, box-shadow 0.15s',
                   }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
+                  {/* Status indicator dot */}
+                  <div style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    backgroundColor: policyStatus.status === 'alert' ? '#dc2626' : policyStatus.status === 'warning' ? '#f59e0b' : '#22c55e',
+                    flexShrink: 0,
+                  }} title={policyStatus.label} />
                   <div style={{ fontSize: 28 }}>{POLICY_TYPE_CONFIG[p.policy_type]?.icon || '📋'}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>
                         {p.nickname || p.carrier}
                       </span>
+                      {/* Status Badge */}
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '2px 8px',
+                        backgroundColor: policyStatus.bgColor,
+                        color: policyStatus.color,
+                        borderRadius: 12,
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}>
+                        {policyStatus.status === 'alert' ? '⚠️' : policyStatus.status === 'warning' ? '💡' : '✓'} {policyStatus.label}
+                      </span>
                       {/* Sharing Indicator */}
-                      {p.shared_with && p.shared_with.length > 0 ? (
+                      {p.shared_with && p.shared_with.length > 0 && (
                         <span style={{
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -482,20 +519,6 @@ export default function PoliciesPage() {
                           fontWeight: 600,
                         }}>
                           👥 Shared ({p.shared_with.length})
-                        </span>
-                      ) : (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '2px 8px',
-                          backgroundColor: '#f3f4f6',
-                          color: '#6b7280',
-                          borderRadius: 12,
-                          fontSize: 11,
-                          fontWeight: 500,
-                        }}>
-                          🔒 Private
                         </span>
                       )}
                     </div>
@@ -558,7 +581,8 @@ export default function PoliciesPage() {
                     Delete
                   </button>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
 
