@@ -9,12 +9,6 @@ export default function Home() {
   const { token } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (token) router.replace('/policies');
-  }, [token, router]);
-
-  if (token) return null;
-
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -47,7 +41,7 @@ export default function Home() {
           <span onClick={() => scrollTo('features')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Features</span>
           <span onClick={() => scrollTo('security')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Security</span>
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push(token ? '/policies' : '/login')}
             style={{
               padding: '8px 20px',
               fontSize: 14,
@@ -59,7 +53,7 @@ export default function Home() {
               cursor: 'pointer',
             }}
           >
-            Sign in
+            {token ? 'Dashboard' : 'Sign in'}
           </button>
         </nav>
       </header>
@@ -82,7 +76,7 @@ export default function Home() {
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
             <button
-              onClick={() => router.push('/login')}
+              onClick={() => router.push(token ? '/policies' : '/login')}
               style={{
                 padding: '14px 32px',
                 fontSize: 16,
@@ -94,7 +88,7 @@ export default function Home() {
                 cursor: 'pointer',
               }}
             >
-              Get Started
+              {token ? 'Go to Dashboard' : 'Get Started'}
             </button>
             <button
               onClick={() => scrollTo('how-it-works')}
@@ -313,7 +307,7 @@ export default function Home() {
             Be ready—without doing extra work.
           </h2>
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push(token ? '/policies' : '/login')}
             style={{
               padding: '16px 40px',
               fontSize: 18,
@@ -325,7 +319,7 @@ export default function Home() {
               cursor: 'pointer',
             }}
           >
-            Get Started
+            {token ? 'Go to Dashboard' : 'Get Started'}
           </button>
         </div>
       </section>

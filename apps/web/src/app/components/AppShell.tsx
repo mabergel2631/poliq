@@ -111,7 +111,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         <div style={{ padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           <button
-            onClick={() => { logout(); router.replace('/login'); }}
+            onClick={() => { logout(); router.replace('/'); }}
             style={{
               display: 'flex',
               alignItems: 'center',
