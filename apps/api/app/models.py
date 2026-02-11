@@ -23,6 +23,7 @@ class Policy(Base):
     carrier: Mapped[str] = mapped_column(String(120))
     policy_number: Mapped[str] = mapped_column(String(80), index=True)
     nickname: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    business_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
     coverage_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
     deductible: Mapped[int | None] = mapped_column(Integer, nullable=True)

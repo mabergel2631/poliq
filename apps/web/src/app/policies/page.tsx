@@ -43,8 +43,10 @@ export default function PoliciesPage() {
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const createFileRef = useRef<HTMLInputElement>(null);
-  const [wizardStep, setWizardStep] = useState(1);
-  const [wizardData, setWizardData] = useState<{ scope: string; policy_type: string }>({ scope: '', policy_type: '' });
+  const [wizardStep, setWizardStep] = useState(0);
+  const [wizardMethod, setWizardMethod] = useState<'upload' | 'email' | ''>('');
+  const [wizardData, setWizardData] = useState<{ scope: string; policy_type: string; business_name: string }>({ scope: '', policy_type: '', business_name: '' });
+  const [existingBusinessNames, setExistingBusinessNames] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [extracting, setExtracting] = useState(false);
@@ -102,6 +104,7 @@ export default function PoliciesPage() {
         carrier: 'Pending extraction...',
         policy_number: 'TBD',
         nickname: null, coverage_amount: null, deductible: null, renewal_date: null,
+        business_name: wizardData.scope === 'business' ? (wizardData.business_name || null) : null,
       });
 
       const document_id = await new Promise<number>((resolve, reject) => {
@@ -150,8 +153,9 @@ export default function PoliciesPage() {
   };
 
   const resetWizard = () => {
-    setWizardStep(1);
-    setWizardData({ scope: '', policy_type: '' });
+    setWizardStep(0);
+    setWizardMethod('');
+    setWizardData({ scope: '', policy_type: '', business_name: '' });
     setUploading(false);
     setUploadProgress(null);
     setExtracting(false);
@@ -246,8 +250,29 @@ export default function PoliciesPage() {
       p.carrier.toLowerCase().includes(q) ||
       p.policy_number.toLowerCase().includes(q) ||
       p.policy_type.toLowerCase().includes(q) ||
-      (p.nickname || '').toLowerCase().includes(q)
+      (p.nickname || '').toLowerCase().includes(q) ||
+      (p.business_name || '').toLowerCase().includes(q)
     );
+  });
+
+  // Group policies by scope, then by type/business
+  const personalPolicies = filteredPolicies.filter(p => p.scope === 'personal');
+  const businessPolicies = filteredPolicies.filter(p => p.scope === 'business');
+
+  const personalByType: Record<string, Policy[]> = {};
+  personalPolicies.forEach(p => {
+    const key = p.policy_type || 'other';
+    if (!personalByType[key]) personalByType[key] = [];
+    personalByType[key].push(p);
+  });
+
+  const businessByName: Record<string, Record<string, Policy[]>> = {};
+  businessPolicies.forEach(p => {
+    const bizName = p.business_name || 'Ungrouped';
+    if (!businessByName[bizName]) businessByName[bizName] = {};
+    const typeKey = p.policy_type || 'other';
+    if (!businessByName[bizName][typeKey]) businessByName[bizName][typeKey] = [];
+    businessByName[bizName][typeKey].push(p);
   });
 
   if (!token) return null;
@@ -278,6 +303,73 @@ export default function PoliciesPage() {
       insights.push(`Annual premium: $${(annualSpend / 100).toLocaleString()}.`);
     }
   }
+
+  const renderPolicyRow = (p: Policy) => {
+    const policyStatus = getPolicyStatus(p.id);
+    return (
+      <div
+        key={p.id}
+        onClick={() => router.push(`/policies/${p.id}`)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px',
+          backgroundColor: '#fff',
+          border: `1px solid ${policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'}`,
+          borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+      >
+        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: policyStatus.status === 'alert' ? '#dc2626' : policyStatus.status === 'warning' ? '#f59e0b' : '#22c55e', flexShrink: 0 }} title={policyStatus.label} />
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>{p.nickname || p.carrier}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', backgroundColor: policyStatus.bgColor, color: policyStatus.color, borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+              {policyStatus.status === 'alert' ? '⚠️' : policyStatus.status === 'warning' ? '💡' : '✓'} {policyStatus.label}
+            </span>
+            {p.shared_with && p.shared_with.length > 0 && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+                👥 Shared ({p.shared_with.length})
+              </span>
+            )}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {p.policy_number}
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {p.renewal_date && (() => {
+            const daysUntil = Math.ceil((new Date(p.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+            const isPast = daysUntil < 0;
+            const isUrgent = daysUntil <= 7;
+            const isRenewingSoon = daysUntil <= 30 && daysUntil > 7;
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                {isPast ? (
+                  <span style={{ padding: '2px 8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Overdue</span>
+                ) : isUrgent ? (
+                  <span style={{ padding: '2px 8px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Urgent</span>
+                ) : isRenewingSoon ? (
+                  <span style={{ padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Renewing soon</span>
+                ) : (
+                  <span style={{ padding: '2px 8px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>OK</span>
+                )}
+                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{new Date(p.renewal_date).toLocaleDateString()}</div>
+              </div>
+            );
+          })()}
+        </div>
+        <button
+          onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
+          className="btn btn-outline"
+          style={{ padding: '6px 12px', fontSize: 12, color: 'var(--color-danger, #dc2626)', borderColor: 'var(--color-danger, #dc2626)', backgroundColor: 'transparent' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+        >
+          Delete
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
@@ -578,85 +670,8 @@ export default function PoliciesPage() {
                 Compare Coverage
               </button>
             )}
-            <button
-              onClick={() => setShowEmailSettings(!showEmailSettings)}
-              className="btn btn-outline"
-              style={{ padding: '14px 28px', fontSize: 15 }}
-            >
-              📧 Email Import
-            </button>
           </div>
         </section>
-
-        {/* Email Settings Section */}
-        {showEmailSettings && (
-          <section style={{ marginBottom: 40 }}>
-            <div style={{
-              padding: 24,
-              backgroundColor: '#fff',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-            }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>Add Policies by Email</h2>
-              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 20px' }}>
-                Forward policy documents to your unique email address and we&apos;ll extract the details automatically.
-              </p>
-
-              {!inboundAddress ? (
-                <button
-                  onClick={handleCreateInboundAddress}
-                  disabled={creatingAddress}
-                  className="btn btn-primary"
-                  style={{ padding: '12px 24px', fontSize: 14 }}
-                >
-                  {creatingAddress ? 'Creating...' : 'Generate Email Address'}
-                </button>
-              ) : (
-                <div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: 16,
-                    backgroundColor: '#f9fafb',
-                    borderRadius: 8,
-                    marginBottom: 16,
-                  }}>
-                    <input
-                      type="text"
-                      readOnly
-                      value={inboundAddress.email}
-                      style={{
-                        flex: 1,
-                        padding: '10px 14px',
-                        fontSize: 14,
-                        fontFamily: 'monospace',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 6,
-                        backgroundColor: '#fff',
-                      }}
-                    />
-                    <button
-                      onClick={() => copyToClipboard(inboundAddress.email)}
-                      className="btn btn-primary"
-                      style={{ padding: '10px 20px', fontSize: 14 }}
-                    >
-                      Copy
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-                    <strong>How it works:</strong>
-                    <ol style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-                      <li>Forward or send policy PDFs to this address</li>
-                      <li>We&apos;ll extract the policy details automatically</li>
-                      <li>Review and approve drafts to add them to your account</li>
-                    </ol>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
 
         {/* ═══════════════════════════════════════════════════════════════
             4️⃣ DETAIL - Policy list (comes last)
@@ -687,133 +702,64 @@ export default function PoliciesPage() {
               </p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {filteredPolicies.map(p => {
-                const policyStatus = getPolicyStatus(p.id);
-                return (
-                <div
-                  key={p.id}
-                  onClick={() => router.push(`/policies/${p.id}`)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 16,
-                    padding: '20px 24px',
-                    backgroundColor: '#fff',
-                    border: `1px solid ${policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'}`,
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  {/* Status indicator dot */}
-                  <div style={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor: policyStatus.status === 'alert' ? '#dc2626' : policyStatus.status === 'warning' ? '#f59e0b' : '#22c55e',
-                    flexShrink: 0,
-                  }} title={policyStatus.label} />
-                  <div style={{ fontSize: 28 }}>{POLICY_TYPE_CONFIG[p.policy_type]?.icon || '📋'}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>
-                        {p.nickname || p.carrier}
-                      </span>
-                      {/* Status Badge */}
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '2px 8px',
-                        backgroundColor: policyStatus.bgColor,
-                        color: policyStatus.color,
-                        borderRadius: 12,
-                        fontSize: 11,
-                        fontWeight: 600,
-                      }}>
-                        {policyStatus.status === 'alert' ? '⚠️' : policyStatus.status === 'warning' ? '💡' : '✓'} {policyStatus.label}
-                      </span>
-                      {/* Sharing Indicator */}
-                      {p.shared_with && p.shared_with.length > 0 && (
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '2px 8px',
-                          backgroundColor: '#e0f2fe',
-                          color: '#0369a1',
-                          borderRadius: 12,
-                          fontSize: 11,
-                          fontWeight: 600,
-                        }}>
-                          👥 Shared ({p.shared_with.length})
+            <>
+              {/* ── PERSONAL SECTION ── */}
+              {personalPolicies.length > 0 && (
+                <div style={{ marginBottom: businessPolicies.length > 0 ? 32 : 0 }}>
+                  <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>
+                    Personal ({personalPolicies.length})
+                  </h3>
+                  {Object.entries(personalByType).map(([typeKey, typePolicies]) => (
+                    <div key={typeKey} style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: 16 }}>{POLICY_TYPE_CONFIG[typeKey]?.icon || '📋'}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
+                          {POLICY_TYPE_CONFIG[typeKey]?.label || typeKey}
                         </span>
-                      )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {typePolicies.map(p => renderPolicyRow(p))}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
-                      {POLICY_TYPE_CONFIG[p.policy_type]?.label || p.policy_type} • {p.policy_number}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    {p.renewal_date && (() => {
-                      const daysUntil = Math.ceil((new Date(p.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-                      const isUrgent = daysUntil <= 7;
-                      const isRenewingSoon = daysUntil <= 30 && daysUntil > 7;
-                      const isPast = daysUntil < 0;
+                  ))}
+                </div>
+              )}
 
-                      return (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                          {/* Status Badge */}
-                          {isPast ? (
-                            <span style={{ padding: '2px 8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
-                              Overdue
+              {/* ── Divider ── */}
+              {personalPolicies.length > 0 && businessPolicies.length > 0 && (
+                <div style={{ borderTop: '1px solid var(--color-border)', marginBottom: 24 }} />
+              )}
+
+              {/* ── BUSINESS SECTION ── */}
+              {businessPolicies.length > 0 && (
+                <div>
+                  <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>
+                    Business ({businessPolicies.length})
+                  </h3>
+                  {Object.entries(businessByName).map(([bizName, typeGroups]) => (
+                    <div key={bizName} style={{ marginBottom: 24 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ fontSize: 16 }}>🏢</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{bizName}</span>
+                      </div>
+                      {Object.entries(typeGroups).map(([typeKey, typePolicies]) => (
+                        <div key={typeKey} style={{ marginLeft: 24, marginBottom: 16 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                            <span style={{ fontSize: 14 }}>{POLICY_TYPE_CONFIG[typeKey]?.icon || '📋'}</span>
+                            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-muted)' }}>
+                              {POLICY_TYPE_CONFIG[typeKey]?.label || typeKey}
                             </span>
-                          ) : isUrgent ? (
-                            <span style={{ padding: '2px 8px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
-                              Urgent
-                            </span>
-                          ) : isRenewingSoon ? (
-                            <span style={{ padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
-                              Renewing soon
-                            </span>
-                          ) : (
-                            <span style={{ padding: '2px 8px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>
-                              OK
-                            </span>
-                          )}
-                          {/* Date */}
-                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                            {new Date(p.renewal_date).toLocaleDateString()}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            {typePolicies.map(p => renderPolicyRow(p))}
                           </div>
                         </div>
-                      );
-                    })()}
-                  </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
-                    className="btn btn-outline"
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 12,
-                      color: 'var(--color-danger, #dc2626)',
-                      borderColor: 'var(--color-danger, #dc2626)',
-                      backgroundColor: 'transparent',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#fef2f2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
-                  >
-                    Delete
-                  </button>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              );
-              })}
-            </div>
+              )}
+            </>
           )}
 
           {/* Shared Policies */}
@@ -866,9 +812,77 @@ export default function PoliciesPage() {
               <button onClick={() => { setShowAddModal(false); resetWizard(); }} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
             </div>
 
+            {/* Step 0: Method Choice */}
+            {wizardStep === 0 && (
+              <div>
+                <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20 }}>How would you like to add your policy?</p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <button
+                    onClick={() => { setWizardMethod('upload'); setWizardStep(1); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 24,
+                      border: '2px solid var(--color-border)', borderRadius: 'var(--radius-md)', backgroundColor: '#fff', cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ fontSize: 32 }}>📄</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>Upload PDF</span>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>Upload a document and auto-extract details</span>
+                  </button>
+                  <button
+                    onClick={() => { setWizardMethod('email'); setWizardStep(-1); }}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 24,
+                      border: '2px solid var(--color-border)', borderRadius: 'var(--radius-md)', backgroundColor: '#fff', cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ fontSize: 32 }}>📧</span>
+                    <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>Email Import</span>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>Forward policy docs to your unique address</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Email Import Path */}
+            {wizardStep === -1 && (
+              <div>
+                <button onClick={() => { setWizardStep(0); setWizardMethod(''); }} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>&larr; Back</button>
+                <h3 style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>Add Policies by Email</h3>
+                <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 20px' }}>
+                  Forward policy documents to your unique email address and we&apos;ll extract the details automatically.
+                </p>
+                {!inboundAddress ? (
+                  <button
+                    onClick={handleCreateInboundAddress}
+                    disabled={creatingAddress}
+                    className="btn btn-primary"
+                    style={{ padding: '12px 24px', fontSize: 14 }}
+                  >
+                    {creatingAddress ? 'Creating...' : 'Generate Email Address'}
+                  </button>
+                ) : (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, backgroundColor: '#f9fafb', borderRadius: 8, marginBottom: 16 }}>
+                      <input type="text" readOnly value={inboundAddress.email} style={{ flex: 1, padding: '10px 14px', fontSize: 14, fontFamily: 'monospace', border: '1px solid var(--color-border)', borderRadius: 6, backgroundColor: '#fff' }} />
+                      <button onClick={() => copyToClipboard(inboundAddress.email)} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: 14 }}>Copy</button>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                      <strong>How it works:</strong>
+                      <ol style={{ margin: '8px 0 0', paddingLeft: 20 }}>
+                        <li>Forward or send policy PDFs to this address</li>
+                        <li>We&apos;ll extract the policy details automatically</li>
+                        <li>Review and approve drafts to add them to your account</li>
+                      </ol>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Step 1: Scope */}
             {wizardStep === 1 && (
               <div>
+                <button onClick={() => { setWizardStep(0); setWizardMethod(''); }} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>&larr; Back</button>
                 <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20 }}>What type of policy is this?</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {[
@@ -877,7 +891,15 @@ export default function PoliciesPage() {
                   ].map(opt => (
                     <button
                       key={opt.value}
-                      onClick={() => { setWizardData(d => ({ ...d, scope: opt.value })); setWizardStep(2); }}
+                      onClick={() => {
+                        setWizardData(d => ({ ...d, scope: opt.value }));
+                        if (opt.value === 'business') {
+                          policiesApi.businessNames().then(setExistingBusinessNames).catch(() => {});
+                          setWizardStep(15); // business name step
+                        } else {
+                          setWizardStep(2);
+                        }
+                      }}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 24,
                         border: '2px solid var(--color-border)', borderRadius: 'var(--radius-md)', backgroundColor: '#fff', cursor: 'pointer'
@@ -891,10 +913,40 @@ export default function PoliciesPage() {
               </div>
             )}
 
+            {/* Step 1.5: Business Name */}
+            {wizardStep === 15 && (
+              <div>
+                <button onClick={() => setWizardStep(1)} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>&larr; Back</button>
+                <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20 }}>Which business is this policy for?</p>
+                <input
+                  list="business-names-list"
+                  value={wizardData.business_name}
+                  onChange={e => setWizardData(d => ({ ...d, business_name: e.target.value }))}
+                  placeholder="e.g. Acme Corp"
+                  style={{
+                    width: '100%', padding: '12px 16px', fontSize: 15, border: '2px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)', marginBottom: 16, boxSizing: 'border-box',
+                  }}
+                  autoFocus
+                />
+                <datalist id="business-names-list">
+                  {existingBusinessNames.map(n => <option key={n} value={n} />)}
+                </datalist>
+                <button
+                  onClick={() => setWizardStep(2)}
+                  disabled={!wizardData.business_name.trim()}
+                  className="btn btn-accent"
+                  style={{ padding: '12px 24px', fontSize: 15, fontWeight: 600, width: '100%' }}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
             {/* Step 2: Type */}
             {wizardStep === 2 && (
               <div>
-                <button onClick={() => setWizardStep(1)} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>← Back</button>
+                <button onClick={() => setWizardStep(wizardData.scope === 'business' ? 15 : 1)} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>&larr; Back</button>
                 <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20 }}>What type of insurance?</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                   {Object.entries(POLICY_TYPE_CONFIG).map(([key, cfg]) => (
@@ -917,7 +969,7 @@ export default function PoliciesPage() {
             {/* Step 3: Upload */}
             {wizardStep === 3 && (
               <div>
-                <button onClick={() => setWizardStep(2)} disabled={uploading || extracting} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>← Back</button>
+                <button onClick={() => setWizardStep(2)} disabled={uploading || extracting} className="btn btn-ghost" style={{ marginBottom: 16, padding: '4px 8px', fontSize: 13 }}>&larr; Back</button>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
                   <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600, color: 'var(--color-text)' }}>Upload Policy Document</h3>

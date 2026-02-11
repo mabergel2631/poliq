@@ -56,6 +56,7 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
             "carrier": p.carrier,
             "policy_number": p.policy_number,
             "nickname": p.nickname,
+            "business_name": p.business_name,
             "coverage_amount": p.coverage_amount,
             "deductible": p.deductible,
             "premium_amount": p.premium_amount,
@@ -71,6 +72,18 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
         })
 
     return result
+
+
+@router.get("/business-names")
+def list_business_names(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    from sqlalchemy import distinct
+    names = db.execute(
+        select(distinct(Policy.business_name))
+        .where(Policy.user_id == user.id)
+        .where(Policy.business_name.isnot(None))
+        .where(Policy.business_name != "")
+    ).scalars().all()
+    return sorted(names)
 
 
 @router.get("/compare")
@@ -98,7 +111,7 @@ def compare_policies(ids: str = Query(...), db: Session = Depends(get_db), user:
             "policy": {
                 "id": policy.id, "scope": policy.scope, "policy_type": policy.policy_type,
                 "carrier": policy.carrier, "policy_number": policy.policy_number,
-                "nickname": policy.nickname, "coverage_amount": policy.coverage_amount,
+                "nickname": policy.nickname, "business_name": policy.business_name, "coverage_amount": policy.coverage_amount,
                 "deductible": policy.deductible,
                 "renewal_date": str(policy.renewal_date) if policy.renewal_date else None,
             },

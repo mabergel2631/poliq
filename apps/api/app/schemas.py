@@ -32,6 +32,7 @@ class PolicyBase(BaseModel):
     carrier: str
     policy_number: str
     nickname: Optional[str] = None
+    business_name: Optional[str] = None
     coverage_amount: Optional[int] = None
     deductible: Optional[int] = None
     premium_amount: Optional[int] = None
@@ -52,6 +53,7 @@ class PolicyUpdate(BaseModel):
     carrier: Optional[str] = None
     policy_number: Optional[str] = None
     nickname: Optional[str] = None
+    business_name: Optional[str] = None
     coverage_amount: Optional[int] = None
     deductible: Optional[int] = None
     premium_amount: Optional[int] = None

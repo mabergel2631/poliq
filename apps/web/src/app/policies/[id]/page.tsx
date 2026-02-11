@@ -46,6 +46,7 @@ export default function PolicyDetailPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [showIdCard, setShowIdCard] = useState(false);
+  const [showDocHistory, setShowDocHistory] = useState(false);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -157,6 +158,7 @@ export default function PolicyDetailPage() {
       carrier: policy.carrier,
       policy_number: policy.policy_number,
       nickname: policy.nickname || '',
+      business_name: policy.business_name || '',
       coverage_amount: policy.coverage_amount,
       deductible: policy.deductible,
       premium_amount: policy.premium_amount,
@@ -168,7 +170,7 @@ export default function PolicyDetailPage() {
   const handleSaveEdit = async () => {
     setError('');
     try {
-      const updated = await policiesApi.update(policyId, { ...editForm, nickname: editForm.nickname || null });
+      const updated = await policiesApi.update(policyId, { ...editForm, nickname: editForm.nickname || null, business_name: editForm.scope === 'business' ? (editForm.business_name || null) : null });
       setPolicy(updated);
       setEditing(false);
       toast('Policy updated', 'success');
@@ -647,6 +649,12 @@ export default function PolicyDetailPage() {
                   <option value="business">Business</option>
                 </select>
               </div>
+              {editForm.scope === 'business' && (
+                <div>
+                  <label style={labelStyle}>Business Name</label>
+                  <input value={editForm.business_name ?? ''} onChange={e => setEditForm({ ...editForm, business_name: e.target.value })} placeholder="e.g. Acme Corp" style={inputStyle} />
+                </div>
+              )}
               <div>
                 <label style={labelStyle}>Type</label>
                 <select value={editForm.policy_type ?? ''} onChange={e => setEditForm({ ...editForm, policy_type: e.target.value })} style={inputStyle}>
@@ -1348,7 +1356,8 @@ export default function PolicyDetailPage() {
           <p style={{ color: '#999', margin: 0 }}>No documents uploaded yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
-            {docs.map(d => (
+            {/* Current (most recent) document */}
+            {(() => { const d = docs[0]; return (
               <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#fafafa', borderRadius: 6 }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1361,6 +1370,7 @@ export default function PolicyDetailPage() {
                         {d.extraction_status}
                       </span>
                     )}
+                    <span style={{ padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 600, backgroundColor: '#dbeafe', color: '#1e40af' }}>Current</span>
                   </div>
                   <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{d.content_type} - {d.created_at}</div>
                 </div>
@@ -1373,7 +1383,48 @@ export default function PolicyDetailPage() {
                   )}
                 </div>
               </div>
-            ))}
+            ); })()}
+
+            {/* Document History toggle */}
+            {docs.length > 1 && (
+              <>
+                <button
+                  onClick={() => setShowDocHistory(!showDocHistory)}
+                  style={{
+                    background: 'none', border: 'none', padding: '8px 0', fontSize: 13,
+                    color: 'var(--color-primary, #2563eb)', cursor: 'pointer', textAlign: 'left', fontWeight: 500,
+                  }}
+                >
+                  {showDocHistory ? '\u25be' : '\u25b8'} Document History ({docs.length - 1} older)
+                </button>
+                {showDocHistory && docs.slice(1).map(d => (
+                  <div key={d.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#fafafa', borderRadius: 6 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 500 }}>{d.filename}</span>
+                        <span style={{ padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 600, backgroundColor: docTypeBg(d.doc_type), color: docTypeFg(d.doc_type) }}>
+                          {DOC_TYPES.find(t => t.value === d.doc_type)?.label || d.doc_type}
+                        </span>
+                        {d.extraction_status !== 'none' && (
+                          <span style={{ padding: '1px 6px', borderRadius: 3, fontSize: 10, fontWeight: 600, backgroundColor: statusBg(d.extraction_status), color: statusFg(d.extraction_status) }}>
+                            {d.extraction_status}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{d.content_type} - {d.created_at}</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => handleDownload(d.id)} className="btn btn-primary">Download</button>
+                      {d.content_type === 'application/pdf' && d.extraction_status !== 'pending' && (
+                        <button onClick={() => handleExtract(d.id)} disabled={extractingId === d.id} className="btn btn-accent">
+                          {extractingId === d.id ? 'Extracting...' : d.extraction_status === 'done' ? 'Re-Extract' : d.extraction_status === 'failed' ? 'Retry Extract' : 'Extract'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>

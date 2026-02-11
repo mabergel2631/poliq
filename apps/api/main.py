@@ -80,6 +80,8 @@ def on_startup():
                 conn.execute(text("ALTER TABLE policies ADD COLUMN nickname VARCHAR(200)"))
             if "premium_amount" not in cols:
                 conn.execute(text("ALTER TABLE policies ADD COLUMN premium_amount INTEGER"))
+            if "business_name" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN business_name VARCHAR(200)"))
     if "policy_shares" in insp.get_table_names():
         share_cols = [c["name"] for c in insp.get_columns("policy_shares")]
         with engine.begin() as conn:

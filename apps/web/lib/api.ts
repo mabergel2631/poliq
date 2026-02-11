@@ -54,6 +54,7 @@ export type Policy = {
   carrier: string;
   policy_number: string;
   nickname?: string | null;
+  business_name?: string | null;
   coverage_amount?: number | null;
   deductible?: number | null;
   premium_amount?: number | null;
@@ -74,6 +75,7 @@ export type PolicyCreate = {
   carrier: string;
   policy_number: string;
   nickname?: string | null;
+  business_name?: string | null;
   coverage_amount?: number | null;
   deductible?: number | null;
   premium_amount?: number | null;
@@ -162,6 +164,9 @@ export const policiesApi = {
   },
   remove(id: number): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/policies/${id}`, { method: "DELETE" });
+  },
+  businessNames(): Promise<string[]> {
+    return request<string[]>("/policies/business-names");
   },
 };
 
