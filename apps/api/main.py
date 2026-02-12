@@ -33,7 +33,7 @@ from app.routes_deltas import router as deltas_router
 from app.routes_scores import router as scores_router
 from app.routes_inbound import router as inbound_router
 
-app = FastAPI(title="Keeps API")
+app = FastAPI(title="Covrabl API")
 
 ALLOWED_ORIGINS = [
     "https://keeps-jet.vercel.app",

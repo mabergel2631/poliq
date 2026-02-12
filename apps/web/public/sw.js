@@ -1,5 +1,5 @@
-// Keeps Service Worker - PWA Support
-const CACHE_NAME = 'keeps-v1';
+// Covrabl Service Worker - PWA Support
+const CACHE_NAME = 'covrabl-v1';
 const STATIC_ASSETS = [
   '/',
   '/login',

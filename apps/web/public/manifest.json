@@ -1,7 +1,7 @@
 {
-  "name": "Keeps",
-  "short_name": "Keeps",
-  "description": "Insurance policy management",
+  "name": "Covrabl",
+  "short_name": "Covrabl",
+  "description": "Coverage intelligence for your insurance",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f1f5f9",

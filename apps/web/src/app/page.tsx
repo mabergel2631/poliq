@@ -71,8 +71,11 @@ export default function Home() {
           <h1 style={{ fontSize: 44, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
             See exactly what you&apos;re covered for — instantly.
           </h1>
-          <p style={{ fontSize: 18, opacity: 0.9, margin: '0 0 32px', lineHeight: 1.7, maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}>
-            Know what&apos;s protected, what&apos;s at risk, and what to do next. {APP_NAME} turns your insurance documents into clear, actionable coverage intelligence.
+          <p style={{ fontSize: 18, opacity: 0.95, margin: '0 0 8px', lineHeight: 1.7, maxWidth: 700, marginLeft: 'auto', marginRight: 'auto', fontWeight: 600 }}>
+            Bring every policy into one place.
+          </p>
+          <p style={{ fontSize: 17, opacity: 0.9, margin: '0 0 32px', lineHeight: 1.7, maxWidth: 700, marginLeft: 'auto', marginRight: 'auto' }}>
+            Know what&apos;s protected, what&apos;s at risk, and what to do next. {APP_NAME} turns fragmented insurance into clear, accessible coverage intelligence — so you and the people you trust always have the information you need.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
             <button
@@ -121,16 +124,17 @@ export default function Home() {
             Your coverage shouldn&apos;t be a mystery.
           </h2>
           <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 1.8, margin: '0 0 32px' }}>
-            Policies are scattered across emails, portals, and PDFs. When something happens, you need answers fast:
+            Policies are scattered across carriers, emails, portals, and PDFs. When something happens, you need answers fast:
           </p>
-          <div style={{ textAlign: 'left', maxWidth: 400, margin: '0 auto 32px', fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 2.2 }}>
+          <div style={{ textAlign: 'left', maxWidth: 420, margin: '0 auto 32px', fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 2.2 }}>
             <div>• What am I covered for?</div>
             <div>• What&apos;s my deductible right now?</div>
             <div>• Who do I call?</div>
             <div>• When does this renew—and what changed?</div>
+            <div>• Can someone I trust access this if I can&apos;t?</div>
           </div>
           <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-primary)', margin: 0 }}>
-            {APP_NAME} gives you one clear answer — instantly.
+            {APP_NAME} gives you one clear, unified view — instantly.
           </p>
         </div>
       </section>
@@ -144,23 +148,23 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 32 }}>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>1</div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Add policies</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Bring your coverage together</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Upload PDFs, scans, photos—or forward documents. (Carrier connections come later.)
+                Upload PDFs, scans, photos—or forward documents. {APP_NAME} brings all policies into one place regardless of carrier or type.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>2</div>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>{APP_NAME} extracts what matters</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>{APP_NAME} structures what matters</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                {APP_NAME} pulls key fields into a consistent format: carrier, policy number, limits, deductibles, and renewal dates.
+                Key coverage details become structured and consistent: carrier, policy number, limits, deductibles, renewal dates, contacts, and claim details.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>3</div>
               <h3 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Stay continuously ready</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Search instantly, track renewals, share safely, and keep everything current.
+                Search instantly, track renewals, share critical information securely, and maintain complete visibility across your coverage.
               </p>
             </div>
           </div>
@@ -169,18 +173,26 @@ export default function Home() {
 
       {/* 4. CORE VALUE */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ maxWidth: 750, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', color: 'var(--color-text)' }}>
             Intelligence, not just storage.
           </h2>
-          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 32px', lineHeight: 1.7 }}>
-            {APP_NAME} turns documents into knowledge — so you see what you have, what&apos;s missing, and what needs attention.
+          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 36px', lineHeight: 1.7 }}>
+            {APP_NAME} transforms fragmented insurance into structured understanding — so you always see:
           </p>
-          <div style={{ textAlign: 'left', maxWidth: 450, margin: '0 auto', fontSize: 15, color: 'var(--color-text)', lineHeight: 2.2 }}>
-            <div>• Limits and deductibles in plain view</div>
-            <div>• Renewal dates with reminders</div>
-            <div>• Contacts and claim details attached to the policy</div>
-            <div>• A single place to share with family or advisors (with permissions)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 32, textAlign: 'left' }}>
+            <div style={{ fontSize: 15, color: 'var(--color-text)', lineHeight: 2.2 }}>
+              <div>• What you have</div>
+              <div>• What&apos;s missing</div>
+              <div>• What needs attention</div>
+              <div>• What others need to access in an emergency</div>
+            </div>
+            <div style={{ fontSize: 15, color: 'var(--color-text)', lineHeight: 2.2 }}>
+              <div>• Limits and deductibles in plain view</div>
+              <div>• Renewal dates with reminders</div>
+              <div>• Contacts and claim details attached to each policy</div>
+              <div>• Emergency-ready sharing with family, caregivers, advisors, or authorized professionals</div>
+            </div>
           </div>
         </div>
       </section>
@@ -193,12 +205,12 @@ export default function Home() {
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
             {[
-              { title: 'Policy clarity', desc: 'Auto, home, life, umbrella, liability, and more in one place.' },
-              { title: 'Automatic extraction', desc: 'No manual retyping. Upload and Keeps captures key details.' },
+              { title: 'Policy clarity', desc: 'Auto, home, life, umbrella, liability, and more in one unified view.' },
+              { title: 'Automatic extraction', desc: `No manual retyping. Upload and ${APP_NAME} captures key details automatically.` },
               { title: 'Instant search', desc: 'Find policies by carrier, policy number, limits, or any extracted field.' },
               { title: 'Renewal awareness', desc: 'Reminders before renewals and critical deadlines.' },
-              { title: 'Claims organization', desc: 'Keep claim documents and status tied to the policy.' },
-              { title: 'Secure sharing', desc: 'Permissioned access for family members and advisors.' },
+              { title: 'Claims organization', desc: 'Keep claim documents and status tied directly to coverage.' },
+              { title: 'Trusted sharing', desc: 'Secure, permissioned access for loved ones, caregivers, attorneys, or emergency responders — so critical information is available when it matters most.' },
             ].map(f => (
               <div key={f.title} className="card" style={{ padding: 24 }}>
                 <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>{f.title}</h3>
@@ -223,15 +235,17 @@ export default function Home() {
                 <li>Manual searching</li>
                 <li>No reminders</li>
                 <li>Key details buried</li>
+                <li>No safe emergency access</li>
               </ul>
             </div>
             <div className="card" style={{ padding: 32, borderColor: 'var(--color-primary)', borderWidth: 2 }}>
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-primary)' }}>{APP_NAME}</h3>
               <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text)', lineHeight: 2 }}>
-                <li>Extracted, structured data</li>
+                <li>Structured coverage data</li>
                 <li>Search by what matters</li>
-                <li>Proactive reminders</li>
-                <li>Clear coverage view</li>
+                <li>Proactive awareness</li>
+                <li>Clear coverage visibility</li>
+                <li>Secure emergency-ready sharing</li>
               </ul>
             </div>
           </div>
@@ -245,14 +259,14 @@ export default function Home() {
             Security built for sensitive documents
           </h2>
           <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 40px', lineHeight: 1.7 }}>
-            Insurance documents contain personal and financial details. {APP_NAME} is designed to treat them like it.
+            Insurance contains personal and financial data. {APP_NAME} treats it accordingly.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, textAlign: 'left' }}>
             {[
-              { title: 'Encryption', desc: 'Data encrypted in transit and at rest' },
-              { title: 'Permissioned sharing', desc: 'Control who sees what' },
-              { title: 'Data ownership', desc: 'Your data stays yours' },
-              { title: 'Privacy-first design', desc: 'Built with privacy as a core principle' },
+              { title: 'Encryption', desc: 'Data encrypted in transit and at rest.' },
+              { title: 'Permissioned sharing', desc: 'Control exactly who sees what.' },
+              { title: 'Data ownership', desc: 'Your data stays yours.' },
+              { title: 'Privacy-first design', desc: 'Built with privacy as a core principle.' },
             ].map(s => (
               <div key={s.title} style={{ padding: 16 }}>
                 <h4 style={{ fontSize: 14, fontWeight: 600, margin: '0 0 4px', color: 'var(--color-text)' }}>{s.title}</h4>
@@ -274,7 +288,7 @@ export default function Home() {
               <div style={{ fontSize: 36, marginBottom: 12 }}>👨‍👩‍👧‍👦</div>
               <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: 'var(--color-text)' }}>Families</h3>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Prepared for the moments that matter.
+                Prepared for the moments that matter — and ready when others need access.
               </p>
             </div>
             <div className="card" style={{ padding: 32, textAlign: 'center' }}>
@@ -304,7 +318,7 @@ export default function Home() {
       }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 24px' }}>
-            Be ready—without doing extra work.
+            Be ready — without doing extra work.
           </h2>
           <button
             onClick={() => router.push(token ? '/policies' : '/login')}

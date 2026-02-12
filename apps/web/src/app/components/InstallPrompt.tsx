@@ -86,7 +86,7 @@ export default function InstallPrompt() {
         <div style={{ fontSize: 32 }}>📱</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
-            Install Keeps App
+            Install Covrabl
           </div>
           {isIOS ? (
             <div style={{ fontSize: 13, opacity: 0.9 }}>
