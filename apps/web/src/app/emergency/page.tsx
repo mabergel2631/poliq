@@ -107,6 +107,22 @@ const DEFAULT_PLAYBOOK = {
   tip: 'Report claims promptly. Delays can complicate the process.',
 };
 
+// Policy type display config (matches policies page)
+const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
+  auto: { icon: '🚗', label: 'Auto' },
+  home: { icon: '🏠', label: 'Home' },
+  health: { icon: '🏥', label: 'Health' },
+  renters: { icon: '🏢', label: 'Renters' },
+  life: { icon: '❤️', label: 'Life' },
+  liability: { icon: '🛡️', label: 'Liability' },
+  umbrella: { icon: '☂️', label: 'Umbrella' },
+  workers_comp: { icon: '👷', label: 'Workers Comp' },
+  other: { icon: '📋', label: 'Other' },
+};
+
+// Emergency-priority order for grouping
+const TYPE_ORDER = ['auto', 'home', 'health', 'renters', 'life', 'liability', 'umbrella', 'workers_comp', 'other'];
+
 type PolicyEmergencyData = {
   policy: Policy;
   contacts: Contact[];
@@ -184,7 +200,6 @@ export default function EmergencyPage() {
         })
       );
       setData(all);
-      if (all.length > 0) setExpandedId(all[0].policy.id);
       setIsUsingCache(false);
 
       // Cache data for offline use
@@ -202,7 +217,6 @@ export default function EmergencyPage() {
           setData(cachedPolicies.data);
           setCacheTimestamp(cachedPolicies.timestamp);
           setIsUsingCache(true);
-          if (cachedPolicies.data.length > 0) setExpandedId(cachedPolicies.data[0].policy.id);
         }
         if (cachedIce) {
           setIceCard(cachedIce.data);
@@ -399,17 +413,6 @@ export default function EmergencyPage() {
                 </a>
               ) : null;
             })()}
-            <button
-              onClick={() => { if (data.length > 0) setExpandedId(data[0].policy.id); }}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px',
-                backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff',
-                border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8,
-                fontSize: 14, fontWeight: 600, cursor: 'pointer',
-              }}
-            >
-              View Coverage Details
-            </button>
           </div>
         )}
       </div>
@@ -668,7 +671,7 @@ export default function EmergencyPage() {
         </div>
       </div>
 
-      {/* Policy List */}
+      {/* Policy List — Grouped by Type */}
       {loading ? (
         <PolicyListSkeleton />
       ) : data.length === 0 ? (
@@ -679,217 +682,263 @@ export default function EmergencyPage() {
           <button onClick={() => router.push('/policies')} className="btn btn-primary">Add Coverage</button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {data.map(({ policy: p, contacts, docs, details }) => {
-            const expanded = expandedId === p.id;
-            const claimsContact = getClaimsContact(contacts);
-            const idCard = getIdCard(docs);
-            const decPage = getDecPage(docs);
-            const vin = getDetail(details, 'VIN') || getDetail(details, 'vin');
-            const address = getDetail(details, 'property_address') || getDetail(details, 'address');
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {(() => {
+            // Group policies by type
+            const groups: Record<string, PolicyEmergencyData[]> = {};
+            data.forEach(item => {
+              const type = item.policy.policy_type.toLowerCase();
+              if (!groups[type]) groups[type] = [];
+              groups[type].push(item);
+            });
+            // Sort groups by emergency-priority order
+            const sortedTypes = Object.keys(groups).sort((a, b) => {
+              const ai = TYPE_ORDER.indexOf(a);
+              const bi = TYPE_ORDER.indexOf(b);
+              return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+            });
 
-            return (
-              <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                {/* Policy header - always visible */}
-                <button
-                  onClick={() => setExpandedId(expanded ? null : p.id)}
-                  style={{
-                    width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '16px 20px', border: 'none', backgroundColor: expanded ? 'var(--color-primary)' : 'var(--color-surface)',
-                    color: expanded ? '#fff' : 'var(--color-text)', cursor: 'pointer', textAlign: 'left',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>{p.nickname || p.carrier}</div>
-                    <div style={{ fontSize: 13, opacity: 0.8, marginTop: 2 }}>
-                      {p.policy_type} {p.nickname ? `- ${p.carrier}` : ''}
-                    </div>
+            return sortedTypes.map(type => {
+              const group = groups[type];
+              const config = POLICY_TYPE_CONFIG[type] || { icon: '📋', label: type.charAt(0).toUpperCase() + type.slice(1) };
+              const expandedItem = group.find(d => d.policy.id === expandedId);
+
+              return (
+                <div key={type}>
+                  {/* Group header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontSize: 22 }}>{config.icon}</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)' }}>{config.label}</span>
+                    <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>({group.length})</span>
                   </div>
-                  <span style={{ fontSize: 20, fontWeight: 300 }}>{expanded ? '−' : '+'}</span>
-                </button>
 
-                {expanded && (
-                  <div style={{ padding: '16px 20px' }}>
-                    {/* Claim Checklist */}
-                    {(() => {
-                      const playbook = EMERGENCY_PLAYBOOK[p.policy_type.toLowerCase()] || DEFAULT_PLAYBOOK;
+                  {/* Tile grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10, marginBottom: expandedItem ? 12 : 0 }}>
+                    {group.map(({ policy: p }) => {
+                      const isActive = expandedId === p.id;
                       return (
-                        <div style={{
-                          backgroundColor: '#fff',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: 'var(--radius-md)',
-                          padding: 20,
-                          marginBottom: 16,
-                        }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: 'var(--color-text)' }}>
-                            {playbook.title}
+                        <button
+                          key={p.id}
+                          onClick={() => setExpandedId(isActive ? null : p.id)}
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                            padding: '14px 16px',
+                            backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-surface)',
+                            color: isActive ? '#fff' : 'var(--color-text)',
+                            border: isActive ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>
+                            {p.nickname || p.carrier}
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {playbook.steps.map((step, i) => {
-                              const key = `${p.id}-${i}`;
-                              const checked = checkedSteps[key] || false;
-                              return (
-                                <label
-                                  key={i}
-                                  style={{
-                                    display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
-                                    padding: '8px 10px', borderRadius: 6,
-                                    backgroundColor: checked ? '#f0fdf4' : 'transparent',
-                                    transition: 'background-color 0.15s',
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => setCheckedSteps(prev => ({ ...prev, [key]: !prev[key] }))}
-                                    style={{ marginTop: 2, width: 16, height: 16, accentColor: '#22c55e', flexShrink: 0 }}
-                                  />
-                                  <span style={{
-                                    fontSize: 14, color: checked ? '#166534' : 'var(--color-text-secondary)', lineHeight: 1.5,
-                                    textDecoration: checked ? 'line-through' : 'none',
-                                  }}>
-                                    {step}
-                                  </span>
-                                </label>
-                              );
-                            })}
+                          <div style={{ fontSize: 12, opacity: 0.7, fontFamily: 'monospace' }}>
+                            {p.policy_number.length > 18 ? p.policy_number.slice(0, 18) + '...' : p.policy_number}
                           </div>
-                          {playbook.tip && (
-                            <div style={{
-                              marginTop: 14,
-                              paddingTop: 14,
-                              borderTop: '1px solid #e5e7eb',
-                              fontSize: 13,
-                              color: 'var(--color-text-muted)',
-                              fontStyle: 'italic',
-                            }}>
-                              {playbook.tip}
+                          {p.nickname && (
+                            <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{p.carrier}</div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Expanded detail panel — below the tile grid */}
+                  {expandedItem && (() => {
+                    const { policy: p, contacts, docs, details } = expandedItem;
+                    const claimsContact = getClaimsContact(contacts);
+                    const idCard = getIdCard(docs);
+                    const decPage = getDecPage(docs);
+                    const vin = getDetail(details, 'VIN') || getDetail(details, 'vin');
+                    const address = getDetail(details, 'property_address') || getDetail(details, 'address');
+                    const playbook = EMERGENCY_PLAYBOOK[p.policy_type.toLowerCase()] || DEFAULT_PLAYBOOK;
+
+                    return (
+                      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '16px 20px' }}>
+                          {/* Claim Checklist */}
+                          <div style={{
+                            backgroundColor: '#fff',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 20,
+                            marginBottom: 16,
+                          }}>
+                            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14, color: 'var(--color-text)' }}>
+                              {playbook.title}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {playbook.steps.map((step, i) => {
+                                const key = `${p.id}-${i}`;
+                                const checked = checkedSteps[key] || false;
+                                return (
+                                  <label
+                                    key={i}
+                                    style={{
+                                      display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer',
+                                      padding: '8px 10px', borderRadius: 6,
+                                      backgroundColor: checked ? '#f0fdf4' : 'transparent',
+                                      transition: 'background-color 0.15s',
+                                    }}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => setCheckedSteps(prev => ({ ...prev, [key]: !prev[key] }))}
+                                      style={{ marginTop: 2, width: 16, height: 16, accentColor: '#22c55e', flexShrink: 0 }}
+                                    />
+                                    <span style={{
+                                      fontSize: 14, color: checked ? '#166534' : 'var(--color-text-secondary)', lineHeight: 1.5,
+                                      textDecoration: checked ? 'line-through' : 'none',
+                                    }}>
+                                      {step}
+                                    </span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                            {playbook.tip && (
+                              <div style={{
+                                marginTop: 14,
+                                paddingTop: 14,
+                                borderTop: '1px solid #e5e7eb',
+                                fontSize: 13,
+                                color: 'var(--color-text-muted)',
+                                fontStyle: 'italic',
+                              }}>
+                                {playbook.tip}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Quick-copy fields */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
+                            <CopyField
+                              label="Policy #"
+                              value={p.policy_number}
+                              onCopy={() => copyToClipboard(p.policy_number, 'Policy #')}
+                            />
+                            {claimsContact?.phone && (
+                              <CopyField
+                                label="Claims Phone"
+                                value={claimsContact.phone}
+                                onCopy={() => copyToClipboard(claimsContact.phone!, 'Claims Phone')}
+                                isPhone
+                              />
+                            )}
+                            {p.coverage_amount && (
+                              <CopyField
+                                label="Coverage"
+                                value={`$${p.coverage_amount.toLocaleString()}`}
+                                onCopy={() => copyToClipboard(String(p.coverage_amount), 'Coverage')}
+                              />
+                            )}
+                            {p.deductible && (
+                              <CopyField
+                                label="Deductible"
+                                value={`$${p.deductible.toLocaleString()}`}
+                                onCopy={() => copyToClipboard(String(p.deductible), 'Deductible')}
+                              />
+                            )}
+                            {vin && (
+                              <CopyField
+                                label="VIN"
+                                value={vin}
+                                onCopy={() => copyToClipboard(vin, 'VIN')}
+                              />
+                            )}
+                            {address && (
+                              <CopyField
+                                label="Property Address"
+                                value={address}
+                                onCopy={() => copyToClipboard(address, 'Address')}
+                              />
+                            )}
+                            <CopyField
+                              label="Carrier"
+                              value={p.carrier}
+                              onCopy={() => copyToClipboard(p.carrier, 'Carrier')}
+                            />
+                            {p.renewal_date && (
+                              <CopyField
+                                label="Renewal Date"
+                                value={p.renewal_date}
+                                onCopy={() => copyToClipboard(p.renewal_date!, 'Renewal Date')}
+                              />
+                            )}
+                          </div>
+
+                          {/* Quick actions */}
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                            {claimsContact?.phone && (
+                              <a
+                                href={`tel:${claimsContact.phone}`}
+                                className="btn btn-accent"
+                                style={{ textDecoration: 'none', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}
+                              >
+                                📞 Call Claims
+                              </a>
+                            )}
+                            {idCard && (
+                              <button onClick={() => handleDownload(idCard.id)} className="btn btn-primary" style={{ padding: '10px 16px' }}>
+                                ID Card
+                              </button>
+                            )}
+                            {decPage && (
+                              <button onClick={() => handleDownload(decPage.id)} className="btn btn-primary" style={{ padding: '10px 16px' }}>
+                                Declarations
+                              </button>
+                            )}
+                            <button
+                              onClick={() => router.push(`/policies/${p.id}`)}
+                              className="btn btn-outline"
+                              style={{ padding: '10px 16px' }}
+                            >
+                              Full Details
+                            </button>
+                          </div>
+
+                          {/* All contacts */}
+                          {contacts.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Contacts</div>
+                              <div style={{ display: 'grid', gap: 6 }}>
+                                {contacts.map(c => (
+                                  <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
+                                    <div>
+                                      <span style={{ fontWeight: 600, textTransform: 'uppercase', fontSize: 10, color: 'var(--color-text-muted)', marginRight: 8 }}>{c.role}</span>
+                                      <span style={{ fontWeight: 500 }}>{c.name || c.company || 'Unknown'}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                      {c.phone && (
+                                        <a href={`tel:${c.phone}`} style={{ color: 'var(--color-accent)', fontWeight: 500, textDecoration: 'none' }}>
+                                          {c.phone}
+                                        </a>
+                                      )}
+                                      {c.email && (
+                                        <a href={`mailto:${c.email}`} style={{ color: 'var(--color-info)', textDecoration: 'none' }}>
+                                          Email
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
-                      );
-                    })()}
-
-                    {/* Quick-copy fields */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-                      <CopyField
-                        label="Policy #"
-                        value={p.policy_number}
-                        onCopy={() => copyToClipboard(p.policy_number, 'Policy #')}
-                      />
-                      {claimsContact?.phone && (
-                        <CopyField
-                          label="Claims Phone"
-                          value={claimsContact.phone}
-                          onCopy={() => copyToClipboard(claimsContact.phone!, 'Claims Phone')}
-                          isPhone
-                        />
-                      )}
-                      {p.coverage_amount && (
-                        <CopyField
-                          label="Coverage"
-                          value={`$${p.coverage_amount.toLocaleString()}`}
-                          onCopy={() => copyToClipboard(String(p.coverage_amount), 'Coverage')}
-                        />
-                      )}
-                      {p.deductible && (
-                        <CopyField
-                          label="Deductible"
-                          value={`$${p.deductible.toLocaleString()}`}
-                          onCopy={() => copyToClipboard(String(p.deductible), 'Deductible')}
-                        />
-                      )}
-                      {vin && (
-                        <CopyField
-                          label="VIN"
-                          value={vin}
-                          onCopy={() => copyToClipboard(vin, 'VIN')}
-                        />
-                      )}
-                      {address && (
-                        <CopyField
-                          label="Property Address"
-                          value={address}
-                          onCopy={() => copyToClipboard(address, 'Address')}
-                        />
-                      )}
-                      <CopyField
-                        label="Carrier"
-                        value={p.carrier}
-                        onCopy={() => copyToClipboard(p.carrier, 'Carrier')}
-                      />
-                      {p.renewal_date && (
-                        <CopyField
-                          label="Renewal Date"
-                          value={p.renewal_date}
-                          onCopy={() => copyToClipboard(p.renewal_date!, 'Renewal Date')}
-                        />
-                      )}
-                    </div>
-
-                    {/* Quick actions */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                      {claimsContact?.phone && (
-                        <a
-                          href={`tel:${claimsContact.phone}`}
-                          className="btn btn-accent"
-                          style={{ textDecoration: 'none', padding: '10px 16px', fontSize: 14, fontWeight: 600 }}
-                        >
-                          📞 Call Claims
-                        </a>
-                      )}
-                      {idCard && (
-                        <button onClick={() => handleDownload(idCard.id)} className="btn btn-primary" style={{ padding: '10px 16px' }}>
-                          ID Card
-                        </button>
-                      )}
-                      {decPage && (
-                        <button onClick={() => handleDownload(decPage.id)} className="btn btn-primary" style={{ padding: '10px 16px' }}>
-                          Declarations
-                        </button>
-                      )}
-                      <button
-                        onClick={() => router.push(`/policies/${p.id}`)}
-                        className="btn btn-outline"
-                        style={{ padding: '10px 16px' }}
-                      >
-                        Full Details
-                      </button>
-                    </div>
-
-                    {/* All contacts */}
-                    {contacts.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Contacts</div>
-                        <div style={{ display: 'grid', gap: 6 }}>
-                          {contacts.map(c => (
-                            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: 13 }}>
-                              <div>
-                                <span style={{ fontWeight: 600, textTransform: 'uppercase', fontSize: 10, color: 'var(--color-text-muted)', marginRight: 8 }}>{c.role}</span>
-                                <span style={{ fontWeight: 500 }}>{c.name || c.company || 'Unknown'}</span>
-                              </div>
-                              <div style={{ display: 'flex', gap: 8 }}>
-                                {c.phone && (
-                                  <a href={`tel:${c.phone}`} style={{ color: 'var(--color-accent)', fontWeight: 500, textDecoration: 'none' }}>
-                                    {c.phone}
-                                  </a>
-                                )}
-                                {c.email && (
-                                  <a href={`mailto:${c.email}`} style={{ color: 'var(--color-info)', textDecoration: 'none' }}>
-                                    Email
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    );
+                  })()}
+                </div>
+              );
+            });
+          })()}
         </div>
       )}
     </div>
