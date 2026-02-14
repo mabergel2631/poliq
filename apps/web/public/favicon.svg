@@ -1,0 +1,7 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="6" fill="#1e3a5f"/>
+  <path d="M 16 4 L 26 10 L 26 17 C 26 24 16 29 16 29 C 16 29 6 24 6 17 L 6 10 Z"
+        fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+  <text x="16" y="20" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700"
+        fill="white" text-anchor="middle" dominant-baseline="middle">C</text>
+</svg>

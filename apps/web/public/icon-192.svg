@@ -6,7 +6,7 @@
   <path d="M 96 28 L 148 56 L 148 100 C 148 140 96 172 96 172 C 96 172 44 140 44 100 L 44 56 Z"
         fill="none" stroke="white" stroke-width="4" stroke-linejoin="round"/>
 
-  <!-- K letter -->
+  <!-- C letter -->
   <text x="96" y="118" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700"
-        fill="white" text-anchor="middle" dominant-baseline="middle">K</text>
+        fill="white" text-anchor="middle" dominant-baseline="middle">C</text>
 </svg>
