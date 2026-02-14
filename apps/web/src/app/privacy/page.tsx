@@ -71,7 +71,7 @@ export default function PrivacyPage() {
         </h3>
         <ul style={{ paddingLeft: 24, margin: '8px 0 16px' }}>
           <li style={{ marginBottom: 8 }}>Social Security numbers</li>
-          <li style={{ marginBottom: 8 }}>Bank account or credit card numbers (payment processing is handled entirely by Stripe)</li>
+          <li style={{ marginBottom: 8 }}>Bank account or credit card numbers (payment processing is handled by secure third-party processors)</li>
           <li style={{ marginBottom: 8 }}>Location data</li>
           <li style={{ marginBottom: 8 }}>Data from third-party tracking or advertising networks</li>
         </ul>
@@ -99,16 +99,16 @@ export default function PrivacyPage() {
           We may use aggregated, anonymized insights to improve our services and better understand
           coverage trends. These insights cannot identify you.
         </p>
+        <p>We will <strong>never</strong>:</p>
+        <ul style={{ paddingLeft: 24, margin: '8px 0 16px' }}>
+          <li style={{ marginBottom: 8 }}><strong>Sell your personal information</strong> — your name, email, and individual policy details are never sold to third parties</li>
+          <li style={{ marginBottom: 8 }}><strong>Share your data with advertisers</strong> or use it for targeted advertising</li>
+          <li style={{ marginBottom: 8 }}><strong>Use your information for unsolicited insurance marketing or lead generation</strong></li>
+        </ul>
         <p>
-          If we ever offer services that involve sharing your information with partners, you will
+          If we ever introduce features that involve sharing information with partners, you will
           always choose whether to participate.
         </p>
-        <p>In addition, we will <strong>never</strong>:</p>
-        <ul style={{ paddingLeft: 24, margin: '8px 0 16px' }}>
-          <li style={{ marginBottom: 8 }}><strong>Share your data with advertisers</strong> — we do not display ads and have no advertising relationships</li>
-          <li style={{ marginBottom: 8 }}><strong>Use your data to market insurance products to you</strong> — we are a tool, not a marketplace</li>
-          <li style={{ marginBottom: 8 }}><strong>Sell your personal information to data brokers</strong> — your name, email, and individual policy details are never sold</li>
-        </ul>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, margin: '40px 0 12px', color: 'var(--color-text)' }}>
           How we share your information
@@ -213,7 +213,7 @@ export default function PrivacyPage() {
         <ul style={{ paddingLeft: 24, margin: '8px 0 16px' }}>
           <li style={{ marginBottom: 8 }}><strong>Cloud hosting and infrastructure</strong> — for running the application and storing data</li>
           <li style={{ marginBottom: 8 }}><strong>Object storage</strong> — for securely storing uploaded documents</li>
-          <li style={{ marginBottom: 8 }}><strong>Stripe</strong> — for payment processing (we never see or store your full credit card number)</li>
+          <li style={{ marginBottom: 8 }}><strong>Payment processors</strong> — Payments are processed through secure third-party payment processors (such as Stripe). {APP_NAME} does not store full payment card details on its own servers. Payment providers may collect and process information in accordance with their own privacy policies.</li>
           <li style={{ marginBottom: 8 }}><strong>AI providers</strong> — for document extraction (documents are processed and not retained by the provider)</li>
         </ul>
         <p>
