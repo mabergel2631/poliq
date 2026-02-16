@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../lib/auth';
 import { APP_NAME, APP_TAGLINE, APP_CONTACT_EMAIL } from './config';
+import Logo from './components/Logo';
 
 export default function Home() {
   const { token } = useAuth();
@@ -30,9 +31,9 @@ export default function Home() {
       }}>
         <div
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-primary)', cursor: 'pointer' }}
+          style={{ cursor: 'pointer' }}
         >
-          {APP_NAME}
+          <Logo size="md" variant="dark" />
         </div>
         <nav className="landing-nav-links">
           <span onClick={() => scrollTo('how-it-works')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>How it works</span>
@@ -52,37 +53,53 @@ export default function Home() {
           1. HERO
       ═══════════════════════════════════════════════════════════════ */}
       <section style={{
-        paddingTop: 120, paddingBottom: 60, paddingLeft: 24, paddingRight: 24,
-        background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 50%, var(--color-primary-light) 100%)',
+        paddingTop: 120, paddingBottom: 80, paddingLeft: 24, paddingRight: 24,
+        background: 'linear-gradient(160deg, #0f1f33 0%, var(--color-primary-dark) 30%, var(--color-primary) 70%, var(--color-primary-light) 100%)',
         color: '#fff',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <h1 style={{ fontSize: 44, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+        {/* Subtle gradient overlay for depth */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'radial-gradient(ellipse at 70% 20%, rgba(63,167,163,0.12) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <h1 style={{
+            fontSize: 48, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.15,
+            letterSpacing: 'var(--letter-spacing-tight)',
+            fontFamily: 'var(--font-heading)',
+          }}>
             Your coverage, finally clear.
           </h1>
-          <p style={{ fontSize: 18, opacity: 0.95, margin: '0 0 8px', lineHeight: 1.7, maxWidth: 720, marginLeft: 'auto', marginRight: 'auto', fontWeight: 600 }}>
+          <p style={{ fontSize: 18, opacity: 0.95, margin: '0 0 8px', lineHeight: 1.7, maxWidth: 720, marginLeft: 'auto', marginRight: 'auto', fontWeight: 500 }}>
             {APP_NAME} reads your policies, tracks what changed, finds what&apos;s missing, and keeps the right people informed — so you always know where you stand.
           </p>
-          <p style={{ fontSize: 15, opacity: 0.8, margin: '0 0 32px', lineHeight: 1.7, maxWidth: 600, marginLeft: 'auto', marginRight: 'auto' }}>
+          <p style={{ fontSize: 15, opacity: 0.7, margin: '0 0 36px', lineHeight: 1.7, maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', letterSpacing: 'var(--letter-spacing-wide)' }}>
             Private. Independent. No credit card required.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 36 }}>
             <button onClick={ctaAction} style={{
-              padding: '14px 32px', fontSize: 16, fontWeight: 600,
-              backgroundColor: 'var(--color-accent)', color: '#fff',
+              padding: '14px 36px', fontSize: 16, fontWeight: 600,
+              backgroundColor: 'var(--color-secondary)', color: '#fff',
               border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(63, 167, 163, 0.3)',
+              transition: 'transform 0.15s, box-shadow 0.15s',
             }}>
               {ctaLabel}
             </button>
             <button onClick={() => scrollTo('how-it-works')} style={{
-              padding: '14px 32px', fontSize: 16, fontWeight: 600,
-              backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff',
-              border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              padding: '14px 32px', fontSize: 16, fontWeight: 500,
+              backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.2)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              backdropFilter: 'blur(4px)',
+              transition: 'background 0.15s',
             }}>
               See how it works
             </button>
           </div>
-          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, opacity: 0.75 }}>
+          <div style={{ display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, opacity: 0.6, letterSpacing: 'var(--letter-spacing-wide)' }}>
             <span>Your data stays yours</span>
             <span>Encrypted &amp; private</span>
             <span>Setup in ~10 minutes</span>
@@ -105,7 +122,7 @@ export default function Home() {
           <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', lineHeight: 1.8, margin: '0 0 32px' }}>
             Most people find out they have a gap when a claim gets denied.
           </p>
-          <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-primary)', margin: 0 }}>
+          <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-secondary-dark)', margin: 0 }}>
             {APP_NAME} breaks the silence.
           </p>
         </div>
@@ -435,11 +452,17 @@ export default function Home() {
       ═══════════════════════════════════════════════════════════════ */}
       <section style={{
         padding: '80px 24px',
-        background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+        background: 'linear-gradient(160deg, #0f1f33 0%, var(--color-primary-dark) 40%, var(--color-primary) 100%)',
         color: '#fff', textAlign: 'center',
+        position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 16px' }}>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'radial-gradient(ellipse at 30% 80%, rgba(63,167,163,0.1) 0%, transparent 60%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
+          <h2 style={{ fontSize: 32, fontWeight: 700, margin: '0 0 16px', letterSpacing: 'var(--letter-spacing-tight)' }}>
             Know where you stand.
           </h2>
           <p style={{ fontSize: 18, opacity: 0.9, margin: '0 0 32px' }}>
@@ -447,12 +470,14 @@ export default function Home() {
           </p>
           <button onClick={ctaAction} style={{
             padding: '16px 40px', fontSize: 18, fontWeight: 600,
-            backgroundColor: 'var(--color-accent)', color: '#fff',
+            backgroundColor: 'var(--color-secondary)', color: '#fff',
             border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(63, 167, 163, 0.3)',
+            transition: 'transform 0.15s, box-shadow 0.15s',
           }}>
             {ctaLabel}
           </button>
-          <div style={{ marginTop: 16, fontSize: 13, opacity: 0.7 }}>
+          <div style={{ marginTop: 16, fontSize: 13, opacity: 0.6, letterSpacing: 'var(--letter-spacing-wide)' }}>
             No credit card required
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
 import { APP_NAME, APP_SIDEBAR_TAGLINE } from '../config';
+import Logo from './Logo';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home', icon: '🏠' },
@@ -73,8 +74,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           aria-label="Go to home page"
           style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left', width: '100%' }}
         >
-          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>{APP_NAME}</div>
-          <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{APP_SIDEBAR_TAGLINE}</div>
+          <Logo size="md" variant="light" />
+          <div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>{APP_SIDEBAR_TAGLINE}</div>
         </button>
 
         <nav style={{ flex: 1, padding: '12px 8px' }}>
@@ -159,7 +160,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           >
             ☰
           </button>
-          <span style={{ fontSize: 16, fontWeight: 700 }}>{APP_NAME}</span>
+          <Logo size="sm" variant="light" />
           <div style={{ width: 22 }} />
         </div>
         {children}
