@@ -21,10 +21,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const colors: Record<ToastType, { bg: string; border: string; text: string }> = {
-    success: { bg: 'var(--color-success-bg)', border: '#6ee7b7', text: 'var(--color-success)' },
-    error: { bg: 'var(--color-danger-bg)', border: '#fecaca', text: 'var(--color-danger)' },
-    info: { bg: 'var(--color-info-bg)', border: '#bfdbfe', text: 'var(--color-info)' },
-    warning: { bg: 'var(--color-warning-bg)', border: '#fde68a', text: 'var(--color-warning)' },
+    success: { bg: 'var(--color-success-bg)', border: 'var(--color-success-border)', text: 'var(--color-success)' },
+    error: { bg: 'var(--color-danger-bg)', border: 'var(--color-danger-border)', text: 'var(--color-danger)' },
+    info: { bg: 'var(--color-info-bg)', border: 'var(--color-info-border)', text: 'var(--color-info)' },
+    warning: { bg: 'var(--color-warning-bg)', border: 'var(--color-warning-border)', text: 'var(--color-warning)' },
   };
 
   return (
@@ -36,6 +36,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           return (
             <div
               key={t.id}
+              role="alert"
+              aria-live="polite"
               style={{
                 padding: '12px 16px',
                 backgroundColor: c.bg,

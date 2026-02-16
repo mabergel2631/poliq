@@ -3,38 +3,12 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
-import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData } from '../../../lib/api';
+import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, profileApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData } from '../../../lib/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { APP_NAME } from '../config';
-
-const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string; group: 'personal' | 'business' | 'both' }> = {
-  // Personal
-  auto: { icon: '🚗', label: 'Auto', group: 'personal' },
-  home: { icon: '🏠', label: 'Home', group: 'personal' },
-  renters: { icon: '🏢', label: 'Renters', group: 'personal' },
-  life: { icon: '❤️', label: 'Life', group: 'personal' },
-  disability: { icon: '🩼', label: 'Disability', group: 'personal' },
-  flood: { icon: '🌊', label: 'Flood', group: 'personal' },
-  earthquake: { icon: '🌋', label: 'Earthquake', group: 'personal' },
-  // Both
-  liability: { icon: '🛡️', label: 'Liability', group: 'both' },
-  umbrella: { icon: '☂️', label: 'Umbrella', group: 'both' },
-  // Business
-  general_liability: { icon: '🛡️', label: 'General Liability', group: 'business' },
-  professional_liability: { icon: '💼', label: 'Professional (E&O)', group: 'business' },
-  commercial_property: { icon: '🏭', label: 'Commercial Property', group: 'business' },
-  commercial_auto: { icon: '🚚', label: 'Commercial Auto', group: 'business' },
-  cyber: { icon: '💻', label: 'Cyber Liability', group: 'business' },
-  bop: { icon: '📦', label: "Business Owner's", group: 'business' },
-  workers_comp: { icon: '👷', label: 'Workers Comp', group: 'business' },
-  directors_officers: { icon: '👔', label: 'Directors & Officers', group: 'business' },
-  epli: { icon: '👥', label: 'Employment Practices', group: 'business' },
-  inland_marine: { icon: '📦', label: 'Inland Marine', group: 'business' },
-  other: { icon: '📋', label: 'Other', group: 'both' },
-};
-
-const POLICY_TYPES = Object.keys(POLICY_TYPE_CONFIG);
+import { POLICY_TYPE_CONFIG, POLICY_TYPES, STATUS_COLORS, SEVERITY_COLORS } from '../constants';
+import TabNav from '../components/TabNav';
 
 export default function PoliciesPage() {
   return (
@@ -78,6 +52,8 @@ function PoliciesPageInner() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const [profileDismissed, setProfileDismissed] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -124,6 +100,15 @@ function PoliciesPageInner() {
       setCoverageSummary(gapsResult.summary || null);
       setInboundAddress(addressResult?.address || null);
       setPendingDrafts(draftsResult?.items || []);
+
+      // Check profile completion (non-blocking)
+      try {
+        const { profile } = await profileApi.get();
+        const flags = [profile.is_homeowner, profile.is_renter, profile.has_dependents, profile.has_vehicle, profile.owns_business, profile.high_net_worth];
+        const noFlagsSet = flags.every(f => !f);
+        const noName = !profile.full_name;
+        setProfileIncomplete(noFlagsSet && noName);
+      } catch { /* ignore */ }
     } catch (err: any) {
       if (err.status === 401 || err.status === 403) { logout(); router.replace('/login'); return; }
       setError(err.message);
@@ -323,9 +308,9 @@ function PoliciesPageInner() {
     const hasHigh = policyGaps.some(g => g.severity === 'high');
     const hasMedium = policyGaps.some(g => g.severity === 'medium');
 
-    if (hasHigh) return { status: 'alert', label: 'Needs Attention', color: '#991b1b', bgColor: '#fee2e2' };
-    if (hasMedium) return { status: 'warning', label: 'Review Suggested', color: '#92400e', bgColor: '#fef3c7' };
-    return { status: 'ok', label: 'Good', color: '#166534', bgColor: '#dcfce7' };
+    if (hasHigh) return { status: 'alert', label: 'Needs Attention', color: 'var(--color-danger-dark)', bgColor: 'var(--color-danger-light)' };
+    if (hasMedium) return { status: 'warning', label: 'Review Suggested', color: 'var(--color-warning-dark)', bgColor: 'var(--color-warning-light)' };
+    return { status: 'ok', label: 'Good', color: 'var(--color-success-dark)', bgColor: 'var(--color-success-light)' };
   };
 
   // Search filter (from scoped policies)
@@ -395,33 +380,38 @@ function PoliciesPageInner() {
     return (
       <div
         key={p.id}
+        role="button"
+        tabIndex={0}
         onClick={() => router.push(`/policies/${p.id}`)}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); router.push(`/policies/${p.id}`); } }}
         style={{
           display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px',
           backgroundColor: '#fff',
-          border: `1px solid ${policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'}`,
+          border: `1px solid ${policyStatus.status === 'alert' ? 'var(--color-danger-border)' : policyStatus.status === 'warning' ? 'var(--color-warning-border)' : 'var(--color-border)'}`,
           borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = policyStatus.status === 'alert' ? '#fecaca' : policyStatus.status === 'warning' ? '#fde68a' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = policyStatus.status === 'alert' ? 'var(--color-danger-border)' : policyStatus.status === 'warning' ? 'var(--color-warning-border)' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
       >
-        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: policyStatus.status === 'alert' ? '#dc2626' : policyStatus.status === 'warning' ? '#f59e0b' : '#22c55e', flexShrink: 0 }} title={policyStatus.label} />
+        <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: policyStatus.status === 'alert' ? 'var(--color-danger)' : policyStatus.status === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', flexShrink: 0 }} title={policyStatus.label} />
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>{p.nickname || p.carrier}</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', backgroundColor: policyStatus.bgColor, color: policyStatus.color, borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
               {policyStatus.status === 'alert' ? '⚠️' : policyStatus.status === 'warning' ? '💡' : '✓'} {policyStatus.label}
             </span>
-            {p.status && p.status !== 'active' && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                backgroundColor: p.status === 'expired' ? '#fee2e2' : '#f3f4f6',
-                color: p.status === 'expired' ? '#991b1b' : '#6b7280',
-              }}>
-                {p.status === 'expired' ? 'Expired' : 'Archived'}
-              </span>
-            )}
+            {p.status && p.status !== 'active' && (() => {
+              const sc = STATUS_COLORS[p.status] || STATUS_COLORS.archived;
+              return (
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                  backgroundColor: sc.bg, color: sc.fg,
+                }}>
+                  {p.status === 'expired' ? 'Expired' : 'Archived'}
+                </span>
+              );
+            })()}
             {p.shared_with && p.shared_with.length > 0 && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
                 👥 Shared ({p.shared_with.length})
               </span>
             )}
@@ -439,13 +429,13 @@ function PoliciesPageInner() {
             return (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                 {isPast ? (
-                  <span style={{ padding: '2px 8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Overdue</span>
+                  <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-danger-light)', color: 'var(--color-danger-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Overdue</span>
                 ) : isUrgent ? (
-                  <span style={{ padding: '2px 8px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Urgent</span>
+                  <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Urgent</span>
                 ) : isRenewingSoon ? (
-                  <span style={{ padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Renewing soon</span>
+                  <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Renewing soon</span>
                 ) : (
-                  <span style={{ padding: '2px 8px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>OK</span>
+                  <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-success-light)', color: 'var(--color-success-dark)', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>OK</span>
                 )}
                 <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{new Date(p.renewal_date).toLocaleDateString()}</div>
               </div>
@@ -455,8 +445,8 @@ function PoliciesPageInner() {
         <button
           onClick={(e) => { e.stopPropagation(); setDeleteConfirm(p.id); }}
           className="btn btn-outline"
-          style={{ padding: '6px 12px', fontSize: 12, color: 'var(--color-danger, #dc2626)', borderColor: 'var(--color-danger, #dc2626)', backgroundColor: 'transparent' }}
-          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#fef2f2'; }}
+          style={{ padding: '6px 12px', fontSize: 12, color: 'var(--color-danger)', borderColor: 'var(--color-danger)', backgroundColor: 'transparent' }}
+          onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-danger-bg)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
         >
           Delete
@@ -505,25 +495,25 @@ function PoliciesPageInner() {
 
             // Red: expired policies
             expiredPolicies.forEach(p => {
-              items.push({ color: '#dc2626', text: `${p.nickname || p.carrier} (${POLICY_TYPE_CONFIG[p.policy_type]?.label || p.policy_type}) is expired` });
+              items.push({ color: 'var(--color-danger)', text: `${p.nickname || p.carrier} (${POLICY_TYPE_CONFIG[p.policy_type]?.label || p.policy_type}) is expired` });
             });
 
             // Red: urgent smart alerts
             urgentAlerts.forEach(a => {
-              items.push({ color: '#dc2626', text: a.title });
+              items.push({ color: 'var(--color-danger)', text: a.title });
             });
 
             // Yellow: renewals within 60 days (not expired — those are already red above)
             scopedRenewals.forEach(r => {
               const days = Math.ceil((new Date(r.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
               if (days > 0 && days <= 60) {
-                items.push({ color: '#f59e0b', text: `${r.nickname || r.carrier} renews in ${days} days` });
+                items.push({ color: 'var(--color-warning)', text: `${r.nickname || r.carrier} renews in ${days} days` });
               }
             });
 
             // Green: all clear
             if (items.length === 0) {
-              items.push({ color: '#22c55e', text: 'All policies current. No upcoming renewals.' });
+              items.push({ color: 'var(--color-success)', text: 'All policies current. No upcoming renewals.' });
             }
 
             return (
@@ -540,7 +530,7 @@ function PoliciesPageInner() {
                   {items.map((item, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14 }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: item.color, flexShrink: 0 }} />
-                      <span style={{ color: item.color === '#22c55e' ? 'var(--color-text-secondary)' : 'var(--color-text)', fontWeight: item.color === '#dc2626' ? 600 : 400 }}>
+                      <span style={{ color: item.color === 'var(--color-success)' ? 'var(--color-text-secondary)' : 'var(--color-text)', fontWeight: item.color === 'var(--color-danger)' ? 600 : 400 }}>
                         {item.text}
                       </span>
                     </div>
@@ -565,23 +555,56 @@ function PoliciesPageInner() {
           )}
         </section>
 
+        {/* Profile Completion Prompt */}
+        {!loading && profileIncomplete && !profileDismissed && (
+          <div style={{
+            padding: '16px 20px', marginBottom: 24,
+            backgroundColor: 'var(--color-info-light)', border: '1px solid var(--color-info-border)',
+            borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-info-dark)', marginBottom: 2 }}>Complete your profile</div>
+              <div style={{ fontSize: 13, color: 'var(--color-info-dark)', opacity: 0.85 }}>
+                Tell us about your situation so we can give you smarter coverage recommendations.
+              </div>
+            </div>
+            <button
+              onClick={() => router.push('/profile')}
+              style={{
+                padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                backgroundColor: 'var(--color-primary)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+            >
+              Go to Profile
+            </button>
+            <button
+              onClick={() => setProfileDismissed(true)}
+              aria-label="Dismiss"
+              style={{
+                padding: '4px 8px', fontSize: 16, lineHeight: 1,
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--color-info-dark)', opacity: 0.6,
+              }}
+            >
+              &times;
+            </button>
+          </div>
+        )}
+
         {/* Scope Tabs */}
         {!loading && hasMultipleScopes && (
-          <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border)', width: 'fit-content' }}>
-            {(['all', 'personal', 'business'] as const).map(tab => (
-              <button
-                key={tab}
-                onClick={() => setScopeTab(tab)}
-                style={{
-                  padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
-                  backgroundColor: scopeTab === tab ? 'var(--color-primary)' : '#fff',
-                  color: scopeTab === tab ? '#fff' : 'var(--color-text-secondary)',
-                  textTransform: 'capitalize',
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+          <div style={{ marginBottom: 24 }}>
+            <TabNav
+              variant="segmented"
+              activeKey={scopeTab}
+              onSelect={(key) => setScopeTab(key as 'all' | 'personal' | 'business')}
+              tabs={[
+                { key: 'all', label: 'All' },
+                { key: 'personal', label: 'Personal' },
+                { key: 'business', label: 'Business' },
+              ]}
+            />
           </div>
         )}
 
@@ -589,8 +612,8 @@ function PoliciesPageInner() {
 
         {/* Pending Drafts Alert */}
         {pendingDrafts.length > 0 && (
-          <div style={{ padding: 20, marginBottom: 24, backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: 'var(--radius-md)' }}>
-            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12, color: '#166534' }}>
+          <div style={{ padding: 20, marginBottom: 24, backgroundColor: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12, color: 'var(--color-success-dark)' }}>
               📧 {pendingDrafts.length} Policy Draft{pendingDrafts.length > 1 ? 's' : ''} Pending Review
             </div>
             {pendingDrafts.slice(0, 3).map(draft => (
@@ -599,7 +622,7 @@ function PoliciesPageInner() {
                   {draft.carrier || 'Unknown Carrier'} - {draft.policy_type || 'Unknown Type'}
                   {draft.original_filename && <span style={{ marginLeft: 8, opacity: 0.7 }}>({draft.original_filename})</span>}
                 </span>
-                <button onClick={() => setShowDraftModal(draft)} className="btn btn-sm" style={{ padding: '6px 16px', fontSize: 13, backgroundColor: '#22c55e', color: '#fff', border: 'none' }}>Review</button>
+                <button onClick={() => setShowDraftModal(draft)} className="btn btn-sm" style={{ padding: '6px 16px', fontSize: 13, backgroundColor: 'var(--color-success)', color: '#fff', border: 'none' }}>Review</button>
               </div>
             ))}
             {pendingDrafts.length > 3 && (
@@ -713,6 +736,7 @@ function PoliciesPageInner() {
                 <input
                   className="form-input"
                   placeholder="Search..."
+                  aria-label="Search policies"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   style={{ width: 200, padding: '8px 12px', fontSize: 14 }}
@@ -846,31 +870,32 @@ function PoliciesPageInner() {
           const showBusiness = scopeTab !== 'personal' && businessGaps.length > 0;
 
           if (!loading && (showPersonal || showBusiness)) {
-            const renderGapCard = (gap: CoverageGap) => (
+            const renderGapCard = (gap: CoverageGap) => {
+              const sev = SEVERITY_COLORS[gap.severity] || SEVERITY_COLORS.info;
+              return (
               <div
                 key={gap.id}
                 style={{
                   padding: 16,
-                  backgroundColor: gap.severity === 'high' ? '#fef2f2' : gap.severity === 'medium' ? '#fffbeb' : '#f0fdf4',
-                  border: `1px solid ${gap.severity === 'high' ? '#fecaca' : gap.severity === 'medium' ? '#fde68a' : '#bbf7d0'}`,
+                  backgroundColor: gap.severity === 'high' ? 'var(--color-danger-bg)' : gap.severity === 'medium' ? 'var(--color-warning-bg)' : 'var(--color-success-bg)',
+                  border: `1px solid ${gap.severity === 'high' ? 'var(--color-danger-border)' : gap.severity === 'medium' ? 'var(--color-warning-border)' : 'var(--color-success-border)'}`,
                   borderRadius: 'var(--radius-md)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{
                     width: 32, height: 32, borderRadius: '50%',
-                    backgroundColor: gap.severity === 'high' ? '#fee2e2' : gap.severity === 'medium' ? '#fef3c7' : '#dcfce7',
+                    backgroundColor: sev.bg,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                   }}>
-                    {gap.severity === 'high' ? '⚠️' : gap.severity === 'medium' ? '💡' : '✓'}
+                    {sev.icon}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{gap.name}</span>
                       <span style={{
                         padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
-                        backgroundColor: gap.severity === 'high' ? '#fee2e2' : gap.severity === 'medium' ? '#fef3c7' : '#dcfce7',
-                        color: gap.severity === 'high' ? '#991b1b' : gap.severity === 'medium' ? '#92400e' : '#166534',
+                        backgroundColor: sev.bg, color: sev.fg,
                       }}>
                         {gap.severity}
                       </span>
@@ -881,6 +906,7 @@ function PoliciesPageInner() {
                 </div>
               </div>
             );
+            };
 
             const renderGapGroup = (label: string, icon: string, gaps: CoverageGap[]) => {
               const actionable = gaps.filter(g => g.severity !== 'info');
@@ -934,12 +960,12 @@ function PoliciesPageInner() {
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
         }}>
-          <div style={{
+          <div role="dialog" aria-modal="true" aria-labelledby="add-policy-title" style={{
             backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 32, maxWidth: 500, width: '100%', maxHeight: '90vh', overflow: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: wizardData.business_name ? 12 : 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Add Policy</h2>
-              <button onClick={() => { setShowAddModal(false); resetWizard(); }} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
+              <h2 id="add-policy-title" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Add Policy</h2>
+              <button onClick={() => { setShowAddModal(false); resetWizard(); }} aria-label="Close dialog" style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
             </div>
 
             {/* Entity context banner */}
@@ -1272,12 +1298,12 @@ function PoliciesPageInner() {
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
         }}>
-          <div style={{
+          <div role="dialog" aria-modal="true" aria-labelledby="draft-review-title" style={{
             backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 32, maxWidth: 550, width: '100%', maxHeight: '90vh', overflow: 'auto'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Review Policy Draft</h2>
-              <button onClick={() => setShowDraftModal(null)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
+              <h2 id="draft-review-title" style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Review Policy Draft</h2>
+              <button onClick={() => setShowDraftModal(null)} aria-label="Close dialog" style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
             </div>
 
             {/* Source info */}
@@ -1347,7 +1373,7 @@ function PoliciesPageInner() {
               <button
                 onClick={() => handleRejectDraft(showDraftModal.id)}
                 className="btn btn-outline"
-                style={{ padding: '14px 24px', fontSize: 15, color: '#dc2626', borderColor: '#dc2626' }}
+                style={{ padding: '14px 24px', fontSize: 15, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
               >
                 Discard
               </button>

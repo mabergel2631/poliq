@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../../lib/auth';
 import { compareApi, PolicyBundle } from '../../../../lib/api';
+import BackButton from '../../components/BackButton';
 
 function CompareContent() {
   const { token, logout } = useAuth();
@@ -50,11 +51,7 @@ function CompareContent() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: 24 }}>
-      <nav style={{ marginBottom: 16, fontSize: 13, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <button onClick={() => router.push('/policies')} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: 13, padding: 0 }}>Policies</button>
-        <span>/</span>
-        <span style={{ color: 'var(--color-text)' }}>Compare</span>
-      </nav>
+      <BackButton href="/policies" label="Compare" parentLabel="Policies" />
 
       <h1 style={{ margin: '0 0 24px', fontSize: 22 }}>Compare Policies</h1>
 

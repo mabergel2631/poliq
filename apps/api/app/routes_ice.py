@@ -4,13 +4,15 @@ Provides shareable emergency access to policy essentials.
 """
 
 import secrets
-import hashlib
+import time
+from collections import defaultdict
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
+import re
 
 from .auth import get_current_user
 from .db import get_db
@@ -24,10 +26,17 @@ class EmergencyCardCreate(BaseModel):
     holder_name: str
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
-    pin: Optional[str] = None  # 4-6 digit PIN
+    pin: Optional[str] = None
     include_coverage_amounts: bool = True
     include_deductibles: bool = True
     expires_at: Optional[str] = None  # YYYY-MM-DD
+
+    @field_validator("pin")
+    @classmethod
+    def validate_pin(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.match(r"^\d{4,6}$", v):
+            raise ValueError("PIN must be 4-6 digits")
+        return v
 
 
 class EmergencyCardUpdate(BaseModel):
@@ -36,6 +45,13 @@ class EmergencyCardUpdate(BaseModel):
     emergency_contact_phone: Optional[str] = None
     pin: Optional[str] = None
     remove_pin: bool = False
+
+    @field_validator("pin")
+    @classmethod
+    def validate_pin(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not re.match(r"^\d{4,6}$", v):
+            raise ValueError("PIN must be 4-6 digits")
+        return v
     include_coverage_amounts: Optional[bool] = None
     include_deductibles: Optional[bool] = None
     expires_at: Optional[str] = None
@@ -47,13 +63,43 @@ class PinVerify(BaseModel):
 
 
 def hash_pin(pin: str) -> str:
-    """Hash a PIN for storage."""
-    return hashlib.sha256(pin.encode()).hexdigest()
+    """Hash a PIN for storage using bcrypt."""
+    from passlib.context import CryptContext
+    _pin_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+    return _pin_ctx.hash(pin)
+
+
+def verify_pin(plain_pin: str, pin_hash: str) -> bool:
+    """Verify a PIN against its bcrypt hash. Falls back to SHA256 for legacy hashes."""
+    from passlib.context import CryptContext
+    _pin_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
+    # Legacy SHA256 hashes are 64 hex chars; bcrypt hashes start with $2b$
+    if len(pin_hash) == 64 and not pin_hash.startswith("$"):
+        import hashlib
+        return hashlib.sha256(plain_pin.encode()).hexdigest() == pin_hash
+    return _pin_ctx.verify(plain_pin, pin_hash)
 
 
 def generate_access_code() -> str:
     """Generate a URL-safe random access code."""
     return secrets.token_urlsafe(12)
+
+
+# Simple in-memory rate limiter for PIN verification (5 attempts per 15 minutes per access_code)
+_pin_attempts: dict[str, list[float]] = defaultdict(list)
+_PIN_MAX_ATTEMPTS = 5
+_PIN_WINDOW_SECONDS = 900  # 15 minutes
+
+
+def _check_pin_rate_limit(access_code: str):
+    """Raise 429 if too many PIN attempts for this access code."""
+    now = time.time()
+    cutoff = now - _PIN_WINDOW_SECONDS
+    # Prune old entries
+    _pin_attempts[access_code] = [t for t in _pin_attempts[access_code] if t > cutoff]
+    if len(_pin_attempts[access_code]) >= _PIN_MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many PIN attempts. Try again later.")
+    _pin_attempts[access_code].append(now)
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -233,6 +279,8 @@ def get_emergency_card_public(access_code: str, db: Session = Depends(get_db)):
 @router.post("/ice/{access_code}/verify")
 def verify_pin_and_get_card(access_code: str, payload: PinVerify, db: Session = Depends(get_db)):
     """Verify PIN and return emergency card data."""
+    _check_pin_rate_limit(access_code)
+
     card = db.execute(
         select(EmergencyCard).where(EmergencyCard.access_code == access_code)
     ).scalar_one_or_none()
@@ -250,18 +298,26 @@ def verify_pin_and_get_card(access_code: str, payload: PinVerify, db: Session = 
         # No PIN required
         return _build_emergency_card_data(card, db)
 
-    if hash_pin(payload.pin) != card.pin_hash:
+    if not verify_pin(payload.pin, card.pin_hash):
         raise HTTPException(status_code=401, detail="Incorrect PIN")
+
+    # Upgrade legacy SHA256 hash to bcrypt on successful verify
+    if not card.pin_hash.startswith("$"):
+        card.pin_hash = hash_pin(payload.pin)
+        db.commit()
 
     return _build_emergency_card_data(card, db)
 
 
 def _build_emergency_card_data(card: EmergencyCard, db: Session) -> dict:
     """Build the full emergency card data with policies."""
-    # Get all policies for this user
+    from sqlalchemy.orm import selectinload
+
+    # Get all policies with contacts eagerly loaded
     policies = db.execute(
         select(Policy).where(Policy.user_id == card.user_id)
-    ).scalars().all()
+        .options(selectinload(Policy.contacts))
+    ).unique().scalars().all()
 
     policy_data = []
     for p in policies:
@@ -269,19 +325,9 @@ def _build_emergency_card_data(card: EmergencyCard, db: Session) -> dict:
         if p.carrier == "Pending extraction...":
             continue
 
-        # Get claims contact
-        claims_contact = db.execute(
-            select(Contact)
-            .where(Contact.policy_id == p.id)
-            .where(Contact.role == "claims")
-        ).scalar_one_or_none()
-
-        # Get agent contact
-        agent_contact = db.execute(
-            select(Contact)
-            .where(Contact.policy_id == p.id)
-            .where(Contact.role.in_(["agent", "broker"]))
-        ).scalars().first()
+        # Find claims and agent contacts from eagerly-loaded collection
+        claims_contact = next((c for c in p.contacts if c.role == "claims"), None)
+        agent_contact = next((c for c in p.contacts if c.role in ("agent", "broker")), None)
 
         policy_info = {
             "id": p.id,

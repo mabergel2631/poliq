@@ -548,8 +548,8 @@ export default function PolicyDetailPage() {
                   {policy.status && policy.status !== 'active' && (
                     <span style={{
                       padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
-                      backgroundColor: policy.status === 'expired' ? '#fef2f2' : '#f3f4f6',
-                      color: policy.status === 'expired' ? '#dc2626' : '#6b7280',
+                      backgroundColor: policy.status === 'expired' ? 'var(--color-danger-bg)' : '#f3f4f6',
+                      color: policy.status === 'expired' ? 'var(--color-danger)' : '#6b7280',
                     }}>
                       {policy.status.charAt(0).toUpperCase() + policy.status.slice(1)}
                     </span>
@@ -758,8 +758,8 @@ export default function PolicyDetailPage() {
         const medGaps = policyGaps.filter(g => g.severity === 'medium');
         const infoGaps = policyGaps.filter(g => g.severity === 'info');
         const actionGaps = [...highGaps, ...medGaps];
-        const statusColor = highGaps.length > 0 ? '#dc2626' : medGaps.length > 0 ? '#d97706' : '#16a34a';
-        const statusBg = highGaps.length > 0 ? '#fef2f2' : medGaps.length > 0 ? '#fffbeb' : '#f0fdf4';
+        const statusColor = highGaps.length > 0 ? 'var(--color-danger)' : medGaps.length > 0 ? 'var(--color-warning)' : 'var(--color-success)';
+        const statusBg = highGaps.length > 0 ? 'var(--color-danger-bg)' : medGaps.length > 0 ? 'var(--color-warning-bg)' : 'var(--color-success-bg)';
         const statusLabel = highGaps.length > 0 ? 'Needs Attention' : medGaps.length > 0 ? 'Review Recommended' : 'Looking Good';
         const statusIcon = highGaps.length > 0 ? '●' : medGaps.length > 0 ? '●' : '●';
         return (
@@ -777,8 +777,8 @@ export default function PolicyDetailPage() {
                   <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: 12, backgroundColor: '#fff', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                     <span style={{
                       padding: '2px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
-                      backgroundColor: gap.severity === 'high' ? '#fef2f2' : '#fffbeb',
-                      color: gap.severity === 'high' ? '#dc2626' : '#d97706',
+                      backgroundColor: gap.severity === 'high' ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                      color: gap.severity === 'high' ? 'var(--color-danger)' : 'var(--color-warning)',
                     }}>{gap.severity === 'high' ? 'High' : 'Medium'}</span>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{gap.name}</div>
@@ -1248,7 +1248,7 @@ export default function PolicyDetailPage() {
                 justifyContent: 'center',
                 gap: 8,
                 padding: '14px 24px',
-                backgroundColor: '#dc2626',
+                backgroundColor: 'var(--color-danger)',
                 color: '#fff',
                 borderRadius: 8,
                 textDecoration: 'none',
@@ -1270,8 +1270,8 @@ export default function PolicyDetailPage() {
                 marginTop: 12,
                 padding: '12px 24px',
                 backgroundColor: '#fff',
-                color: '#991b1b',
-                border: '2px solid #dc2626',
+                color: 'var(--color-danger-dark)',
+                border: '2px solid var(--color-danger)',
                 borderRadius: 8,
                 fontSize: 14,
                 fontWeight: 600,
@@ -1282,7 +1282,7 @@ export default function PolicyDetailPage() {
             </button>
 
             {policy.deductible && (
-              <p style={{ margin: '12px 0 0', fontSize: 12, color: '#991b1b', textAlign: 'center' }}>
+              <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--color-danger-dark)', textAlign: 'center' }}>
                 Remember: Your deductible is ${policy.deductible.toLocaleString()}
               </p>
             )}
@@ -1297,7 +1297,7 @@ export default function PolicyDetailPage() {
             <div>
               <h2 className="section-title" style={{ margin: 0 }}>Premium History</h2>
               {premiumHistoryChange !== 0 && (
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: premiumHistoryChange > 0 ? '#dc2626' : '#16a34a' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: premiumHistoryChange > 0 ? 'var(--color-danger)' : 'var(--color-success)' }}>
                   {premiumHistoryChange > 0 ? '↑' : '↓'} {Math.abs(premiumHistoryChange)}% total change
                 </p>
               )}
@@ -1424,8 +1424,8 @@ export default function PolicyDetailPage() {
                       borderRadius: 4,
                       fontSize: 12,
                       fontWeight: 600,
-                      backgroundColor: entry.change_pct > 0 ? '#fef2f2' : entry.change_pct < 0 ? '#f0fdf4' : '#f3f4f6',
-                      color: entry.change_pct > 0 ? '#dc2626' : entry.change_pct < 0 ? '#16a34a' : '#6b7280',
+                      backgroundColor: entry.change_pct > 0 ? 'var(--color-danger-bg)' : entry.change_pct < 0 ? 'var(--color-success-bg)' : '#f3f4f6',
+                      color: entry.change_pct > 0 ? 'var(--color-danger)' : entry.change_pct < 0 ? 'var(--color-success)' : '#6b7280',
                     }}>
                       {entry.change_pct > 0 ? '+' : ''}{entry.change_pct}%
                     </span>
@@ -1565,8 +1565,8 @@ export default function PolicyDetailPage() {
             {policyCertificates.map(cert => {
               const isExpired = cert.status === 'expired';
               const isExpiring = cert.status === 'expiring';
-              const badgeBg = isExpired ? '#fef2f2' : isExpiring ? '#fffbeb' : '#f0fdf4';
-              const badgeColor = isExpired ? '#dc2626' : isExpiring ? '#d97706' : '#16a34a';
+              const badgeBg = isExpired ? 'var(--color-danger-bg)' : isExpiring ? 'var(--color-warning-bg)' : 'var(--color-success-bg)';
+              const badgeColor = isExpired ? 'var(--color-danger)' : isExpiring ? 'var(--color-warning)' : 'var(--color-success)';
               return (
                 <div key={cert.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 14, backgroundColor: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
                   <div>

@@ -42,12 +42,12 @@ def _update_status(cert: Certificate, today: date):
         cert.status = "active"
 
 
-def _enrich(cert: Certificate, db: Session) -> dict:
+def _enrich(cert: Certificate, db: Session, policy_map: dict[int, Policy] | None = None) -> dict:
     """Build response dict with joined policy info."""
     policy_carrier = None
     policy_type = None
     if cert.policy_id:
-        policy = db.get(Policy, cert.policy_id)
+        policy = policy_map.get(cert.policy_id) if policy_map is not None else db.get(Policy, cert.policy_id)
         if policy:
             policy_carrier = policy.carrier
             policy_type = policy.policy_type
@@ -100,7 +100,17 @@ def list_certificates(direction: str | None = None, policy_id: int | None = None
     for c in certs:
         _update_status(c, today)
     db.commit()
-    return [_enrich(c, db) for c in certs]
+
+    # Batch-load linked policies to avoid N+1
+    linked_policy_ids = {c.policy_id for c in certs if c.policy_id}
+    policy_map: dict[int, Policy] = {}
+    if linked_policy_ids:
+        policies = db.execute(
+            select(Policy).where(Policy.id.in_(linked_policy_ids))
+        ).scalars().all()
+        policy_map = {p.id: p for p in policies}
+
+    return [_enrich(c, db, policy_map) for c in certs]
 
 
 @router.post("/extract-pdf")

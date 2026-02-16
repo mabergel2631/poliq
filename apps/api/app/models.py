@@ -1,5 +1,5 @@
 from sqlalchemy import String, Integer, Boolean, Date, DateTime, ForeignKey, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db import Base
 
 
@@ -51,6 +51,12 @@ class Policy(Base):
     renewal_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
 
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+    # Relationships for eager loading
+    contacts: Mapped[list["Contact"]] = relationship("Contact", lazy="select", cascade="all, delete-orphan")
+    details: Mapped[list["PolicyDetail"]] = relationship("PolicyDetail", lazy="select", cascade="all, delete-orphan")
+    coverage_items: Mapped[list["CoverageItem"]] = relationship("CoverageItem", lazy="select", cascade="all, delete-orphan")
+    exposure: Mapped["Exposure | None"] = relationship("Exposure", lazy="select", foreign_keys=[exposure_id])
 
 
 class PolicyDetail(Base):

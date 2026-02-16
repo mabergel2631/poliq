@@ -387,11 +387,11 @@ def analyze_coverage_gaps(
     # Check each gap rule
     # No auto insurance
     if "auto" not in policy_types:
-        # Only flag if they seem to have a vehicle (we'd know from context or assume)
+        severity = "high" if user_context.get("has_vehicle") else "info"
         gaps.append({
             "id": "consider_auto",
             "name": "Auto Insurance",
-            "severity": "info",
+            "severity": severity,
             "description": "No auto policy on file. If you own or lease a vehicle, you need auto insurance.",
             "recommendation": "Add your auto policy to track coverage and renewals.",
             "category": "auto_liability"
@@ -399,10 +399,16 @@ def analyze_coverage_gaps(
 
     # No home/renters
     if "home" not in policy_types and "renters" not in policy_types:
+        if user_context.get("is_homeowner"):
+            severity = "high"
+        elif user_context.get("is_renter"):
+            severity = "medium"
+        else:
+            severity = "info"
         gaps.append({
             "id": "consider_property",
             "name": "Property Insurance",
-            "severity": "info",
+            "severity": severity,
             "description": "No home or renters policy on file.",
             "recommendation": "Homeowners need dwelling coverage. Renters should have renters insurance to protect belongings.",
             "category": "personal_property"
@@ -422,11 +428,12 @@ def analyze_coverage_gaps(
 
     # No umbrella - important for asset protection
     if "umbrella" not in policy_types and "liability" not in policy_types:
-        if len(policy_types) >= 2:  # They have multiple policies, may have assets to protect
+        if user_context.get("high_net_worth") or len(policy_types) >= 2:
+            severity = "high" if user_context.get("high_net_worth") else "medium"
             gaps.append({
                 "id": "no_umbrella",
                 "name": "Umbrella Coverage",
-                "severity": "medium",
+                "severity": severity,
                 "description": "No umbrella/excess liability policy.",
                 "recommendation": "An umbrella policy provides additional liability coverage above your auto and home limits. Protects your assets from lawsuits.",
                 "category": "umbrella_liability"
@@ -437,8 +444,9 @@ def analyze_coverage_gaps(
                       "commercial_auto", "cyber", "bop", "directors_officers", "epli",
                       "inland_marine", "workers_comp"}
     has_business_policies = bool(policy_types & business_types)
+    owns_business = user_context.get("owns_business", False)
 
-    if has_business_policies:
+    if has_business_policies or owns_business:
         if "general_liability" not in policy_types and "bop" not in policy_types:
             gaps.append({
                 "id": "no_gl",
@@ -449,20 +457,22 @@ def analyze_coverage_gaps(
                 "category": "general_liability"
             })
         if "cyber" not in policy_types:
+            severity = "high" if owns_business else "medium"
             gaps.append({
                 "id": "no_cyber",
                 "name": "No Cyber Coverage",
-                "severity": "medium",
+                "severity": severity,
                 "description": "No cyber liability policy on file.",
                 "recommendation": "Cyber insurance covers data breaches, ransomware, and response costs. A growing risk for all businesses.",
                 "category": "cyber_liability"
             })
-        if "epli" not in policy_types and "workers_comp" in policy_types:
+        if "epli" not in policy_types and ("workers_comp" in policy_types or owns_business):
+            severity = "high" if owns_business else "medium"
             gaps.append({
                 "id": "no_epli",
                 "name": "No Employment Practices Liability",
-                "severity": "medium",
-                "description": "You have workers' comp but no EPLI coverage.",
+                "severity": severity,
+                "description": "No EPLI coverage on file.",
                 "recommendation": "EPLI covers wrongful termination, discrimination, and harassment claims — risks not covered by workers' comp.",
                 "category": "employment_practices"
             })

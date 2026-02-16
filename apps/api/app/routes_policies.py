@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
+from collections import defaultdict
 
 from .auth import get_current_user
 from .db import get_db
@@ -16,18 +17,32 @@ router = APIRouter(prefix="/policies", tags=["policies"])
 
 @router.get("")
 def list_policies(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    # Eager load contacts, details, and exposure in a single query
     policies = db.execute(
-        select(Policy).where(Policy.user_id == user.id).order_by(Policy.id.desc())
-    ).scalars().all()
+        select(Policy)
+        .where(Policy.user_id == user.id)
+        .options(
+            selectinload(Policy.contacts),
+            selectinload(Policy.details),
+            selectinload(Policy.exposure),
+        )
+        .order_by(Policy.id.desc())
+    ).unique().scalars().all()
+
+    # Batch load shares for all policies in one query
+    policy_ids = [p.id for p in policies]
+    shares_map: dict[int, list[str]] = defaultdict(list)
+    if policy_ids:
+        shares = db.execute(
+            select(PolicyShare).where(PolicyShare.policy_id.in_(policy_ids))
+        ).scalars().all()
+        for s in shares:
+            shares_map[s.policy_id].append(s.shared_with_email)
 
     result = []
     for p in policies:
-        contacts = db.execute(
-            select(Contact).where(Contact.policy_id == p.id)
-        ).scalars().all()
-
         key_contacts = {}
-        for c in contacts:
+        for c in p.contacts:
             if c.role in ("claims", "broker", "agent") and c.role not in key_contacts:
                 key_contacts[c.role] = {
                     "name": c.name,
@@ -36,24 +51,7 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
                     "email": c.email,
                 }
 
-        # Fetch key details for card display
-        details = db.execute(
-            select(PolicyDetail).where(PolicyDetail.policy_id == p.id)
-        ).scalars().all()
-        key_details = {d.field_name: d.field_value for d in details}
-
-        # Fetch shares
-        shares = db.execute(
-            select(PolicyShare).where(PolicyShare.policy_id == p.id)
-        ).scalars().all()
-        shared_with = [s.shared_with_email for s in shares]
-
-        # Resolve exposure name
-        exposure_name = None
-        if p.exposure_id:
-            exp = db.get(Exposure, p.exposure_id)
-            if exp:
-                exposure_name = exp.name
+        key_details = {d.field_name: d.field_value for d in p.details}
 
         result.append({
             "id": p.id,
@@ -71,9 +69,9 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
             "created_at": str(p.created_at),
             "key_contacts": key_contacts,
             "key_details": key_details,
-            "shared_with": shared_with,
+            "shared_with": shares_map.get(p.id, []),
             "exposure_id": p.exposure_id,
-            "exposure_name": exposure_name,
+            "exposure_name": p.exposure.name if p.exposure else None,
             "status": p.status or "active",
             # Deductible tracking
             "deductible_type": p.deductible_type,
@@ -106,16 +104,33 @@ def compare_policies(ids: str = Query(...), db: Session = Depends(get_db), user:
     if len(id_list) < 2 or len(id_list) > 4:
         raise HTTPException(status_code=400, detail="Provide 2-4 policy ids")
 
-    bundles = []
+    # Eager-load all requested policies with relationships in one query
+    policies = db.execute(
+        select(Policy).where(Policy.id.in_(id_list), Policy.user_id == user.id)
+        .options(
+            selectinload(Policy.contacts),
+            selectinload(Policy.coverage_items),
+            selectinload(Policy.details),
+        )
+    ).unique().scalars().all()
+
+    policy_map = {p.id: p for p in policies}
     for pid in id_list:
-        policy = db.get(Policy, pid)
-        if not policy or policy.user_id != user.id:
+        if pid not in policy_map:
             raise HTTPException(status_code=404, detail=f"Policy {pid} not found")
 
-        contacts = db.execute(select(Contact).where(Contact.policy_id == pid)).scalars().all()
-        coverage = db.execute(select(CoverageItem).where(CoverageItem.policy_id == pid)).scalars().all()
-        details = db.execute(select(PolicyDetail).where(PolicyDetail.policy_id == pid)).scalars().all()
-        premiums = db.execute(select(Premium).where(Premium.policy_id == pid)).scalars().all()
+    # Batch-load premiums for all policies
+    all_premiums = db.execute(
+        select(Premium).where(Premium.policy_id.in_(id_list))
+    ).scalars().all()
+    premium_map: dict[int, list] = defaultdict(list)
+    for p in all_premiums:
+        premium_map[p.policy_id].append(p)
+
+    bundles = []
+    for pid in id_list:
+        policy = policy_map[pid]
+        premiums = premium_map.get(pid, [])
 
         bundles.append({
             "policy": {
@@ -125,9 +140,9 @@ def compare_policies(ids: str = Query(...), db: Session = Depends(get_db), user:
                 "deductible": policy.deductible,
                 "renewal_date": str(policy.renewal_date) if policy.renewal_date else None,
             },
-            "contacts": [{"id": c.id, "role": c.role, "name": c.name, "company": c.company, "phone": c.phone, "email": c.email} for c in contacts],
-            "coverage_items": [{"id": ci.id, "item_type": ci.item_type, "description": ci.description, "limit": ci.limit} for ci in coverage],
-            "details": [{"id": d.id, "field_name": d.field_name, "field_value": d.field_value} for d in details],
+            "contacts": [{"id": c.id, "role": c.role, "name": c.name, "company": c.company, "phone": c.phone, "email": c.email} for c in policy.contacts],
+            "coverage_items": [{"id": ci.id, "item_type": ci.item_type, "description": ci.description, "limit": ci.limit} for ci in policy.coverage_items],
+            "details": [{"id": d.id, "field_name": d.field_name, "field_value": d.field_value} for d in policy.details],
             "premiums": [{"id": p.id, "amount": p.amount, "frequency": p.frequency, "due_date": str(p.due_date), "paid_date": str(p.paid_date) if p.paid_date else None} for p in premiums],
         })
 
@@ -157,12 +172,17 @@ def get_policy(policy_id: int, db: Session = Depends(get_db), user: User = Depen
     if policy.user_id == user.id:
         return policy
 
-    # Shared access
+    # Shared access (enforce expiration)
+    from datetime import date as date_type
+    today = date_type.today()
     share = db.execute(
         select(PolicyShare)
         .where(PolicyShare.policy_id == policy_id)
         .where(PolicyShare.shared_with_email == user.email)
         .where(PolicyShare.accepted == True)  # noqa: E712
+        .where(
+            (PolicyShare.expires_at.is_(None)) | (PolicyShare.expires_at >= today)
+        )
     ).scalar_one_or_none()
     if share:
         return policy

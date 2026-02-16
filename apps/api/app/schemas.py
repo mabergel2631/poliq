@@ -1,12 +1,12 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, field_validator
+from typing import Optional, List, Literal
 from datetime import date, datetime
 
 
 # ── Auth ──────────────────────────────────────────────
 
 class UserCreate(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 
@@ -26,8 +26,16 @@ class Token(BaseModel):
 
 # ── Policies ──────────────────────────────────────────
 
+VALID_POLICY_TYPES = [
+    "auto", "home", "health", "renters", "life", "disability", "flood", "earthquake",
+    "liability", "umbrella", "general_liability", "professional_liability",
+    "commercial_property", "commercial_auto", "cyber", "bop", "workers_comp",
+    "directors_officers", "epli", "inland_marine", "other",
+]
+
+
 class PolicyBase(BaseModel):
-    scope: str
+    scope: Literal["personal", "business"]
     policy_type: str
     carrier: str
     policy_number: str
@@ -38,11 +46,18 @@ class PolicyBase(BaseModel):
     premium_amount: Optional[int] = None
     renewal_date: Optional[date] = None
     exposure_id: Optional[int] = None
-    status: Optional[str] = "active"  # active, expired, archived
+    status: Optional[Literal["active", "expired", "archived"]] = "active"
     # Deductible tracking
-    deductible_type: Optional[str] = None  # annual, per_incident
+    deductible_type: Optional[Literal["annual", "per_incident"]] = None
     deductible_period_start: Optional[date] = None
     deductible_applied: Optional[int] = None  # cents applied to deductible
+
+    @field_validator("policy_type")
+    @classmethod
+    def validate_policy_type(cls, v: str) -> str:
+        if v.lower() not in VALID_POLICY_TYPES:
+            raise ValueError(f"Invalid policy_type: {v}")
+        return v.lower()
 
 
 class PolicyCreate(PolicyBase):
@@ -50,7 +65,7 @@ class PolicyCreate(PolicyBase):
 
 
 class PolicyUpdate(BaseModel):
-    scope: Optional[str] = None
+    scope: Optional[Literal["personal", "business"]] = None
     policy_type: Optional[str] = None
     carrier: Optional[str] = None
     policy_number: Optional[str] = None
@@ -61,11 +76,18 @@ class PolicyUpdate(BaseModel):
     premium_amount: Optional[int] = None
     renewal_date: Optional[date] = None
     exposure_id: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[Literal["active", "expired", "archived"]] = None
     # Deductible tracking
-    deductible_type: Optional[str] = None
+    deductible_type: Optional[Literal["annual", "per_incident"]] = None
     deductible_period_start: Optional[date] = None
     deductible_applied: Optional[int] = None
+
+    @field_validator("policy_type")
+    @classmethod
+    def validate_policy_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v.lower() not in VALID_POLICY_TYPES:
+            raise ValueError(f"Invalid policy_type: {v}")
+        return v.lower() if v else v
 
 
 class PolicyOut(PolicyBase):
@@ -80,7 +102,7 @@ class PolicyOut(PolicyBase):
 # ── Contacts ──────────────────────────────────────────
 
 class ContactBase(BaseModel):
-    role: str
+    role: Literal["agent", "broker", "claims", "customer_service", "underwriter", "other"]
     name: Optional[str] = None
     company: Optional[str] = None
     phone: Optional[str] = None
@@ -93,7 +115,7 @@ class ContactCreate(ContactBase):
 
 
 class ContactUpdate(BaseModel):
-    role: Optional[str] = None
+    role: Optional[Literal["agent", "broker", "claims", "customer_service", "underwriter", "other"]] = None
     name: Optional[str] = None
     company: Optional[str] = None
     phone: Optional[str] = None
@@ -113,7 +135,7 @@ class ContactOut(ContactBase):
 # ── Coverage Items (Inclusions/Exclusions) ────────────
 
 class CoverageItemBase(BaseModel):
-    item_type: str  # "inclusion" or "exclusion"
+    item_type: Literal["inclusion", "exclusion"]
     description: str
     limit: Optional[str] = None
 
@@ -123,7 +145,7 @@ class CoverageItemCreate(CoverageItemBase):
 
 
 class CoverageItemUpdate(BaseModel):
-    item_type: Optional[str] = None
+    item_type: Optional[Literal["inclusion", "exclusion"]] = None
     description: Optional[str] = None
     limit: Optional[str] = None
 
@@ -166,7 +188,7 @@ class PolicyDetailOut(PolicyDetailBase):
 
 class PremiumBase(BaseModel):
     amount: int  # cents
-    frequency: str  # monthly, quarterly, semi_annual, annual
+    frequency: Literal["monthly", "quarterly", "semi_annual", "annual"]
     due_date: date
     paid_date: Optional[date] = None
     payment_method: Optional[str] = None
@@ -179,7 +201,7 @@ class PremiumCreate(PremiumBase):
 
 class PremiumUpdate(BaseModel):
     amount: Optional[int] = None
-    frequency: Optional[str] = None
+    frequency: Optional[Literal["monthly", "quarterly", "semi_annual", "annual"]] = None
     due_date: Optional[date] = None
     paid_date: Optional[date] = None
     payment_method: Optional[str] = None
@@ -199,7 +221,7 @@ class PremiumOut(PremiumBase):
 
 class ClaimBase(BaseModel):
     claim_number: str
-    status: str  # open, in_progress, closed, denied
+    status: Literal["open", "in_progress", "closed", "denied"]
     date_filed: date
     date_resolved: Optional[date] = None
     amount_claimed: Optional[int] = None  # cents
@@ -214,7 +236,7 @@ class ClaimCreate(ClaimBase):
 
 class ClaimUpdate(BaseModel):
     claim_number: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[Literal["open", "in_progress", "closed", "denied"]] = None
     date_filed: Optional[date] = None
     date_resolved: Optional[date] = None
     amount_claimed: Optional[int] = None
@@ -273,8 +295,8 @@ class AuditLogPage(BaseModel):
 # ── Policy Sharing ───────────────────────────────────
 
 class ShareCreate(BaseModel):
-    shared_with_email: str
-    permission: str = "view"  # view or edit
+    shared_with_email: EmailStr
+    permission: Literal["view", "edit"] = "view"
     role_label: Optional[str] = None  # spouse, child, cpa, attorney, caregiver, broker, other
     expires_at: Optional[date] = None
 
@@ -323,11 +345,11 @@ class ExposureOut(BaseModel):
 # ── Certificates ──────────────────────────────────
 
 class CertificateCreate(BaseModel):
-    direction: str  # "issued" or "received"
+    direction: Literal["issued", "received"]
     policy_id: Optional[int] = None
     counterparty_name: str
     counterparty_type: str
-    counterparty_email: Optional[str] = None
+    counterparty_email: Optional[EmailStr] = None
     carrier: Optional[str] = None
     policy_number: Optional[str] = None
     coverage_types: Optional[str] = None
@@ -337,16 +359,16 @@ class CertificateCreate(BaseModel):
     minimum_coverage: Optional[int] = None
     effective_date: Optional[date] = None
     expiration_date: Optional[date] = None
-    status: Optional[str] = "active"
+    status: Optional[Literal["active", "expiring", "expired", "pending"]] = "active"
     notes: Optional[str] = None
 
 
 class CertificateUpdate(BaseModel):
-    direction: Optional[str] = None
+    direction: Optional[Literal["issued", "received"]] = None
     policy_id: Optional[int] = None
     counterparty_name: Optional[str] = None
     counterparty_type: Optional[str] = None
-    counterparty_email: Optional[str] = None
+    counterparty_email: Optional[EmailStr] = None
     carrier: Optional[str] = None
     policy_number: Optional[str] = None
     coverage_types: Optional[str] = None
@@ -356,7 +378,7 @@ class CertificateUpdate(BaseModel):
     minimum_coverage: Optional[int] = None
     effective_date: Optional[date] = None
     expiration_date: Optional[date] = None
-    status: Optional[str] = None
+    status: Optional[Literal["active", "expiring", "expired", "pending"]] = None
     notes: Optional[str] = None
 
 
@@ -378,6 +400,80 @@ class CertificateOut(BaseModel):
     effective_date: Optional[date] = None
     expiration_date: Optional[date] = None
     status: str
+    notes: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── User Profile ──────────────────────────────────────
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    is_homeowner: Optional[bool] = None
+    is_renter: Optional[bool] = None
+    has_dependents: Optional[bool] = None
+    has_vehicle: Optional[bool] = None
+    owns_business: Optional[bool] = None
+    high_net_worth: Optional[bool] = None
+
+
+class UserProfileOut(BaseModel):
+    id: int
+    user_id: int
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    address_street: Optional[str] = None
+    address_city: Optional[str] = None
+    address_state: Optional[str] = None
+    address_zip: Optional[str] = None
+    is_homeowner: bool
+    is_renter: bool
+    has_dependents: bool
+    has_vehicle: bool
+    owns_business: bool
+    high_net_worth: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ProfileContactCreate(BaseModel):
+    contact_type: Literal["emergency", "broker"]
+    name: str
+    relationship: Optional[str] = None
+    company: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ProfileContactUpdate(BaseModel):
+    name: Optional[str] = None
+    relationship: Optional[str] = None
+    company: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class ProfileContactOut(BaseModel):
+    id: int
+    user_id: int
+    contact_type: str
+    name: str
+    relationship: Optional[str] = None
+    company: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
     notes: Optional[str] = None
     created_at: datetime
 

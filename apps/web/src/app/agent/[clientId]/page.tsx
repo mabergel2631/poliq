@@ -51,7 +51,7 @@ export default function ClientDetailPage() {
   if (error || !data) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ color: '#dc2626' }}>{error || 'Not found'}</p>
+        <p style={{ color: 'var(--color-danger)' }}>{error || 'Not found'}</p>
         <button onClick={() => router.push('/agent')} style={{ marginTop: 16, padding: '8px 20px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: '#fff', cursor: 'pointer' }}>
           Back to Dashboard
         </button>
@@ -59,7 +59,7 @@ export default function ClientDetailPage() {
     );
   }
 
-  const scoreColor = (data.protection_score ?? 0) >= 70 ? '#16a34a' : (data.protection_score ?? 0) >= 40 ? '#d97706' : '#dc2626';
+  const scoreColor = (data.protection_score ?? 0) >= 70 ? 'var(--color-success)' : (data.protection_score ?? 0) >= 40 ? 'var(--color-warning)' : 'var(--color-danger)';
 
   return (
     <div style={{ padding: '32px 24px', maxWidth: 900, margin: '0 auto' }}>
@@ -147,7 +147,7 @@ export default function ClientDetailPage() {
                   <span style={{
                     padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
                     backgroundColor: p.status === 'expired' ? '#fef2f2' : '#f3f4f6',
-                    color: p.status === 'expired' ? '#dc2626' : '#6b7280',
+                    color: p.status === 'expired' ? 'var(--color-danger)' : '#6b7280',
                   }}>
                     {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
                   </span>

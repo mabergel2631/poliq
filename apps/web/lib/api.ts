@@ -1192,6 +1192,108 @@ export const certificatesApi = {
   },
 };
 
+// ── Profile API ─────────────────────────────────────
+
+export type UserProfile = {
+  id: number;
+  user_id: number;
+  full_name?: string | null;
+  phone?: string | null;
+  address_street?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  address_zip?: string | null;
+  is_homeowner: boolean;
+  is_renter: boolean;
+  has_dependents: boolean;
+  has_vehicle: boolean;
+  owns_business: boolean;
+  high_net_worth: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type UserProfileUpdate = {
+  full_name?: string | null;
+  phone?: string | null;
+  address_street?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  address_zip?: string | null;
+  is_homeowner?: boolean;
+  is_renter?: boolean;
+  has_dependents?: boolean;
+  has_vehicle?: boolean;
+  owns_business?: boolean;
+  high_net_worth?: boolean;
+};
+
+export type ProfileContact = {
+  id: number;
+  user_id: number;
+  contact_type: string;
+  name: string;
+  relationship?: string | null;
+  company?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  created_at: string;
+};
+
+export type ProfileContactCreate = {
+  contact_type: string;
+  name: string;
+  relationship?: string | null;
+  company?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+};
+
+export type IcePrefill = {
+  holder_name: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+};
+
+export const profileApi = {
+  get(): Promise<{ profile: UserProfile; contacts: ProfileContact[] }> {
+    return request<{ profile: UserProfile; contacts: ProfileContact[] }>("/profile");
+  },
+  update(payload: UserProfileUpdate): Promise<UserProfile> {
+    return request<UserProfile>("/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  listContacts(type?: string): Promise<ProfileContact[]> {
+    const qs = type ? `?type=${type}` : "";
+    return request<ProfileContact[]>(`/profile/contacts${qs}`);
+  },
+  createContact(payload: ProfileContactCreate): Promise<ProfileContact> {
+    return request<ProfileContact>("/profile/contacts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  updateContact(id: number, payload: Partial<ProfileContactCreate>): Promise<ProfileContact> {
+    return request<ProfileContact>(`/profile/contacts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  removeContact(id: number): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/profile/contacts/${id}`, { method: "DELETE" });
+  },
+  getIcePrefill(): Promise<IcePrefill> {
+    return request<IcePrefill>("/profile/prefill/ice");
+  },
+};
+
 export type COIExtraction = {
   counterparty_name: string;
   counterparty_type: string;

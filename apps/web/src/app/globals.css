@@ -25,12 +25,24 @@
   /* Semantic */
   --color-success: #059669;
   --color-success-bg: #ecfdf5;
+  --color-success-dark: #166534;
+  --color-success-light: #dcfce7;
+  --color-success-border: #bbf7d0;
   --color-warning: #d97706;
   --color-warning-bg: #fffbeb;
+  --color-warning-dark: #92400e;
+  --color-warning-light: #fef3c7;
+  --color-warning-border: #fde68a;
   --color-danger: #dc2626;
   --color-danger-bg: #fef2f2;
+  --color-danger-dark: #991b1b;
+  --color-danger-light: #fee2e2;
+  --color-danger-border: #fecaca;
   --color-info: #2563eb;
   --color-info-bg: #eff6ff;
+  --color-info-dark: #1e40af;
+  --color-info-light: #dbeafe;
+  --color-info-border: #bfdbfe;
 
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -197,12 +209,12 @@ body {
   letter-spacing: 0.03em;
 }
 
-.badge-personal { background: #dbeafe; color: #1e40af; }
-.badge-business { background: #fef3c7; color: #92400e; }
-.badge-open { background: #dbeafe; color: #1e40af; }
+.badge-personal { background: var(--color-info-light); color: var(--color-info-dark); }
+.badge-business { background: var(--color-warning-light); color: var(--color-warning-dark); }
+.badge-open { background: var(--color-info-light); color: var(--color-info-dark); }
 .badge-in_progress { background: #ffedd5; color: #9a3412; }
 .badge-closed { background: #d1fae5; color: #065f46; }
-.badge-denied { background: #fee2e2; color: #991b1b; }
+.badge-denied { background: var(--color-danger-light); color: var(--color-danger-dark); }
 .badge-success { background: var(--color-success-bg); color: var(--color-success); }
 .badge-warning { background: var(--color-warning-bg); color: var(--color-warning); }
 .badge-info { background: var(--color-info-bg); color: var(--color-info); }
@@ -246,19 +258,19 @@ body {
 .alert-error {
   background: var(--color-danger-bg);
   color: var(--color-danger);
-  border: 1px solid #fecaca;
+  border: 1px solid var(--color-danger-border);
 }
 
 .alert-warning {
   background: var(--color-warning-bg);
-  color: #92400e;
-  border: 1px solid #fde68a;
+  color: var(--color-warning-dark);
+  border: 1px solid var(--color-warning-border);
 }
 
 .alert-info {
   background: var(--color-info-bg);
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+  color: var(--color-info-dark);
+  border: 1px solid var(--color-info-border);
 }
 
 /* ── Section headings ───────────────────────────────── */

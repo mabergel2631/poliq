@@ -5,29 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../../lib/auth';
 import { gapsApi, BusinessEntityDetail, CoverageGap } from '../../../../../lib/api';
 import { useToast } from '../../../components/Toast';
-
-const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
-  auto: { icon: '🚗', label: 'Auto' },
-  home: { icon: '🏠', label: 'Home' },
-  renters: { icon: '🏢', label: 'Renters' },
-  life: { icon: '❤️', label: 'Life' },
-  disability: { icon: '🩼', label: 'Disability' },
-  flood: { icon: '🌊', label: 'Flood' },
-  earthquake: { icon: '🌋', label: 'Earthquake' },
-  liability: { icon: '🛡️', label: 'Liability' },
-  umbrella: { icon: '☂️', label: 'Umbrella' },
-  general_liability: { icon: '🛡️', label: 'General Liability' },
-  professional_liability: { icon: '💼', label: 'Professional (E&O)' },
-  commercial_property: { icon: '🏭', label: 'Commercial Property' },
-  commercial_auto: { icon: '🚚', label: 'Commercial Auto' },
-  cyber: { icon: '💻', label: 'Cyber Liability' },
-  bop: { icon: '📦', label: "Business Owner's" },
-  workers_comp: { icon: '👷', label: 'Workers Comp' },
-  directors_officers: { icon: '👔', label: 'Directors & Officers' },
-  epli: { icon: '👥', label: 'Employment Practices' },
-  inland_marine: { icon: '📦', label: 'Inland Marine' },
-  other: { icon: '📋', label: 'Other' },
-};
+import BackButton from '../../../components/BackButton';
+import { getPolicyTypeDisplay } from '../../../constants';
 
 type DeduplicatedContact = BusinessEntityDetail['contacts'][0] & { policy_ids: number[] };
 
@@ -94,15 +73,15 @@ export default function BusinessEntityPage() {
   const uniqueContacts = deduplicateContacts(data?.contacts || []);
 
   const getPolicyStatus = (policyId: number) => {
-    if (!data) return { status: 'ok' as const, label: 'Good', color: '#166534', bgColor: '#dcfce7' };
+    if (!data) return { status: 'ok' as const, label: 'Good', color: 'var(--color-success-dark)', bgColor: 'var(--color-success-light)' };
     const policyGaps = data.gaps.filter(g =>
       g.policy_id === policyId || (g.id && g.id.includes(`_${policyId}`))
     );
     const hasHigh = policyGaps.some(g => g.severity === 'high');
     const hasMedium = policyGaps.some(g => g.severity === 'medium');
-    if (hasHigh) return { status: 'alert' as const, label: 'Needs Attention', color: '#991b1b', bgColor: '#fee2e2' };
-    if (hasMedium) return { status: 'warning' as const, label: 'Review Suggested', color: '#92400e', bgColor: '#fef3c7' };
-    return { status: 'ok' as const, label: 'Good', color: '#166534', bgColor: '#dcfce7' };
+    if (hasHigh) return { status: 'alert' as const, label: 'Needs Attention', color: 'var(--color-danger-dark)', bgColor: 'var(--color-danger-light)' };
+    if (hasMedium) return { status: 'warning' as const, label: 'Review Suggested', color: 'var(--color-warning-dark)', bgColor: 'var(--color-warning-light)' };
+    return { status: 'ok' as const, label: 'Good', color: 'var(--color-success-dark)', bgColor: 'var(--color-success-light)' };
   };
 
   if (loading) {
@@ -122,12 +101,7 @@ export default function BusinessEntityPage() {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '40px 24px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <button
-            onClick={() => { if (window.history.length > 1) router.back(); else router.push('/policies'); }}
-            style={{ padding: '4px 0', fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1 }}>&larr;</span> Back
-          </button>
+          <BackButton href="/policies" label="Policies" />
           <div className="alert alert-error">{error}</div>
         </div>
       </div>
@@ -140,13 +114,7 @@ export default function BusinessEntityPage() {
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', padding: '40px 24px' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
 
-        {/* Back */}
-        <button
-          onClick={() => { if (window.history.length > 1) router.back(); else router.push('/policies'); }}
-          style={{ padding: '4px 0', fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>&larr;</span> Back
-        </button>
+        <BackButton href="/policies" label="Policies" />
 
         {/* Entity Header */}
         <section style={{ marginBottom: 28 }}>
@@ -170,12 +138,12 @@ export default function BusinessEntityPage() {
           <div style={{
             padding: '20px 24px',
             backgroundColor: '#fff',
-            border: `1px solid ${entityStatus === 'alert' ? '#fecaca' : entityStatus === 'warning' ? '#fde68a' : '#e5e7eb'}`,
+            border: `1px solid ${entityStatus === 'alert' ? 'var(--color-danger-border)' : entityStatus === 'warning' ? 'var(--color-warning-border)' : '#e5e7eb'}`,
             borderRadius: 'var(--radius-lg)',
-            borderLeft: `4px solid ${entityStatus === 'alert' ? '#dc2626' : entityStatus === 'warning' ? '#f59e0b' : '#22c55e'}`,
+            borderLeft: `4px solid ${entityStatus === 'alert' ? 'var(--color-danger)' : entityStatus === 'warning' ? 'var(--color-warning)' : 'var(--color-success)'}`,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: entityStatus === 'alert' ? '#dc2626' : entityStatus === 'warning' ? '#f59e0b' : '#22c55e' }} />
+              <div style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: entityStatus === 'alert' ? 'var(--color-danger)' : entityStatus === 'warning' ? 'var(--color-warning)' : 'var(--color-success)' }} />
               <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text)' }}>
                 {entityStatus === 'alert' ? `${highGaps} coverage gap${highGaps > 1 ? 's' : ''} detected`
                   : entityStatus === 'warning' ? `${mediumGaps} item${mediumGaps > 1 ? 's' : ''} to review`
@@ -204,9 +172,9 @@ export default function BusinessEntityPage() {
           {Object.entries(policiesByType).map(([typeKey, typePolicies]) => (
             <div key={typeKey} style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 16 }}>{POLICY_TYPE_CONFIG[typeKey]?.icon || '📋'}</span>
+                <span style={{ fontSize: 16 }}>{getPolicyTypeDisplay(typeKey).icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>
-                  {POLICY_TYPE_CONFIG[typeKey]?.label || typeKey}
+                  {getPolicyTypeDisplay(typeKey).label}
                 </span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -223,9 +191,9 @@ export default function BusinessEntityPage() {
                         borderRadius: 'var(--radius-md)', cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s',
                       }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = status.status === 'alert' ? '#fecaca' : status.status === 'warning' ? '#fde68a' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = status.status === 'alert' ? 'var(--color-danger-border)' : status.status === 'warning' ? 'var(--color-warning-border)' : 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
                     >
-                      <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: status.status === 'alert' ? '#dc2626' : status.status === 'warning' ? '#f59e0b' : '#22c55e', flexShrink: 0 }} />
+                      <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: status.status === 'alert' ? 'var(--color-danger)' : status.status === 'warning' ? 'var(--color-warning)' : 'var(--color-success)', flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>{p.nickname || p.carrier}</span>
@@ -234,8 +202,8 @@ export default function BusinessEntityPage() {
                           </span>
                           {p.status && p.status !== 'active' && (
                             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                              backgroundColor: p.status === 'expired' ? '#fee2e2' : '#f3f4f6',
-                              color: p.status === 'expired' ? '#991b1b' : '#6b7280',
+                              backgroundColor: p.status === 'expired' ? 'var(--color-danger-light)' : '#f3f4f6',
+                              color: p.status === 'expired' ? 'var(--color-danger-dark)' : '#6b7280',
                             }}>
                               {p.status === 'expired' ? 'Expired' : 'Archived'}
                             </span>
@@ -252,13 +220,13 @@ export default function BusinessEntityPage() {
                           return (
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                               {isPast ? (
-                                <span style={{ padding: '2px 8px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Overdue</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-danger-light)', color: 'var(--color-danger-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Overdue</span>
                               ) : isUrgent ? (
-                                <span style={{ padding: '2px 8px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Urgent</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-warning-light)', color: 'var(--color-warning-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Urgent</span>
                               ) : isRenewingSoon ? (
-                                <span style={{ padding: '2px 8px', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Renewing soon</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-info-light)', color: 'var(--color-info-dark)', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>Renewing soon</span>
                               ) : (
-                                <span style={{ padding: '2px 8px', backgroundColor: '#dcfce7', color: '#166534', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>OK</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: 'var(--color-success-light)', color: 'var(--color-success-dark)', borderRadius: 12, fontSize: 11, fontWeight: 500 }}>OK</span>
                               )}
                               <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{new Date(p.renewal_date).toLocaleDateString()}</div>
                             </div>
@@ -303,8 +271,8 @@ export default function BusinessEntityPage() {
                         <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{gap.name}</span>
                         <span style={{
                           padding: '2px 8px', borderRadius: 12, fontSize: 10, fontWeight: 600, textTransform: 'uppercase',
-                          backgroundColor: gap.severity === 'high' ? '#fee2e2' : gap.severity === 'medium' ? '#fef3c7' : '#dcfce7',
-                          color: gap.severity === 'high' ? '#991b1b' : gap.severity === 'medium' ? '#92400e' : '#166534',
+                          backgroundColor: gap.severity === 'high' ? 'var(--color-danger-light)' : gap.severity === 'medium' ? 'var(--color-warning-light)' : 'var(--color-success-light)',
+                          color: gap.severity === 'high' ? 'var(--color-danger-dark)' : gap.severity === 'medium' ? 'var(--color-warning-dark)' : 'var(--color-success-dark)',
                         }}>
                           {gap.severity}
                         </span>
@@ -384,8 +352,8 @@ export default function BusinessEntityPage() {
                     <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{cert.counterparty_name}</span>
                     <span style={{
                       padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                      backgroundColor: cert.status === 'active' ? '#dcfce7' : cert.status === 'expiring' ? '#fef3c7' : '#fee2e2',
-                      color: cert.status === 'active' ? '#166534' : cert.status === 'expiring' ? '#92400e' : '#991b1b',
+                      backgroundColor: cert.status === 'active' ? 'var(--color-success-light)' : cert.status === 'expiring' ? 'var(--color-warning-light)' : 'var(--color-danger-light)',
+                      color: cert.status === 'active' ? 'var(--color-success-dark)' : cert.status === 'expiring' ? 'var(--color-warning-dark)' : 'var(--color-danger-dark)',
                     }}>
                       {cert.status}
                     </span>

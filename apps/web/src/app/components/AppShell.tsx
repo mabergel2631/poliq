@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
-import { APP_NAME } from '../config';
+import { APP_NAME, APP_SIDEBAR_TAGLINE } from '../config';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Home', icon: '🏠' },
@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/emergency', label: 'Emergency', icon: '🚨', urgent: true },
   { href: '/audit', label: 'Alerts', icon: '🔔' },
   { href: '/policies/compare', label: 'Compare', icon: '⚖️' },
+  { href: '/profile', label: 'Profile', icon: '👤' },
   { href: '/privacy', label: 'Privacy', icon: '🔒' },
 ];
 
@@ -67,13 +68,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           flexShrink: 0,
         }}
       >
-        <div
+        <button
           onClick={() => router.push('/')}
-          style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}
+          aria-label="Go to home page"
+          style={{ padding: '20px 20px 16px', borderBottom: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', background: 'none', border: 'none', color: 'inherit', textAlign: 'left', width: '100%' }}
         >
           <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em' }}>{APP_NAME}</div>
-          <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>Intelligent Insurance</div>
-        </div>
+          <div style={{ fontSize: 11, opacity: 0.6, marginTop: 2 }}>{APP_SIDEBAR_TAGLINE}</div>
+        </button>
 
         <nav style={{ flex: 1, padding: '12px 8px' }}>
           {(role === 'agent'
@@ -152,6 +154,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         }}>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
             style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', padding: 0 }}
           >
             ☰
@@ -166,6 +169,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {pathname !== '/emergency' && (
         <button
           onClick={() => router.push('/emergency')}
+          aria-label="Emergency access"
           style={{
             position: 'fixed',
             bottom: 24,
@@ -173,7 +177,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             width: 64,
             height: 64,
             borderRadius: '50%',
-            backgroundColor: '#dc2626',
+            backgroundColor: 'var(--color-danger)',
             color: '#fff',
             border: '3px solid rgba(255,255,255,0.9)',
             fontSize: 16,

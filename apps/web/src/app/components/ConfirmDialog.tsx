@@ -21,6 +21,8 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
       if (e.key === 'Escape') onCancel();
     };
     window.addEventListener('keydown', handler);
+    // Focus the dialog when opened
+    dialogRef.current?.focus();
     return () => window.removeEventListener('keydown', handler);
   }, [open, onCancel]);
 
@@ -37,6 +39,10 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
     >
       <div
         ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
         className="card"
         style={{
@@ -44,7 +50,7 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
           boxShadow: 'var(--shadow-lg)',
         }}
       >
-        <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: 'var(--color-text)' }}>{title}</h3>
+        <h3 id="confirm-dialog-title" style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: 'var(--color-text)' }}>{title}</h3>
         <p style={{ margin: '0 0 20px', fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{message}</p>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button onClick={onCancel} className="btn btn-outline" style={{ padding: '8px 16px' }}>Cancel</button>

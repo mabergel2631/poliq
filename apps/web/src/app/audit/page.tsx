@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
 import { deltasApi, PolicyDelta, DeltaListResponse } from '../../../lib/api';
-
-const severityConfig: Record<string, { bg: string; fg: string; label: string; icon: string }> = {
-  critical: { bg: '#fee2e2', fg: '#991b1b', label: 'Critical', icon: '🚨' },
-  warning: { bg: '#fef3c7', fg: '#92400e', label: 'Warning', icon: '⚠️' },
-  info: { bg: '#dbeafe', fg: '#1e40af', label: 'Info', icon: 'ℹ️' },
-};
+import { formatDate } from '../../../lib/format';
+import BackButton from '../components/BackButton';
+import EmptyState from '../components/EmptyState';
+import TabNav from '../components/TabNav';
+import { ALERT_SEVERITY_CONFIG } from '../constants';
 
 const deltaTypeLabels: Record<string, string> = {
   increased: 'increased',
@@ -103,11 +102,7 @@ export default function AlertsPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      <nav style={{ marginBottom: 16, fontSize: 13, color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <button onClick={() => router.push('/policies')} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: 13, padding: 0 }}>Policies</button>
-        <span>/</span>
-        <span style={{ color: 'var(--color-text)' }}>Alerts</span>
-      </nav>
+      <BackButton href="/policies" label="Alerts" parentLabel="Policies" />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
@@ -122,65 +117,40 @@ export default function AlertsPage() {
             className="btn btn-outline"
             style={{ padding: '8px 16px', fontSize: 13 }}
           >
-            Mark All as Read
+            Acknowledge All
           </button>
         )}
       </div>
 
-      {error && <div style={{ padding: 12, marginBottom: 16, backgroundColor: '#fee', color: '#c00', borderRadius: 4 }}>{error}</div>}
+      {error && <div className="alert alert-error">{error}</div>}
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <button
-          onClick={() => setFilter('unacknowledged')}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: 20,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-            backgroundColor: filter === 'unacknowledged' ? 'var(--color-primary)' : '#f3f4f6',
-            color: filter === 'unacknowledged' ? '#fff' : 'var(--color-text)',
-          }}
-        >
-          Unread {unacknowledgedCount > 0 && `(${unacknowledgedCount})`}
-        </button>
-        <button
-          onClick={() => setFilter('all')}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: 20,
-            fontSize: 13,
-            fontWeight: 500,
-            cursor: 'pointer',
-            backgroundColor: filter === 'all' ? 'var(--color-primary)' : '#f3f4f6',
-            color: filter === 'all' ? '#fff' : 'var(--color-text)',
-          }}
-        >
-          All
-        </button>
+      <div style={{ marginBottom: 20 }}>
+        <TabNav
+          variant="pill"
+          activeKey={filter}
+          onSelect={(key) => setFilter(key as 'all' | 'unacknowledged')}
+          tabs={[
+            { key: 'unacknowledged', label: `New${unacknowledgedCount > 0 ? ` (${unacknowledgedCount})` : ''}` },
+            { key: 'all', label: 'All' },
+          ]}
+        />
       </div>
 
       {!data ? (
         <p>Loading...</p>
       ) : data.items.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px 24px', backgroundColor: 'var(--color-surface)', borderRadius: 'var(--radius-lg)' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 600 }}>
-            {filter === 'unacknowledged' ? 'All caught up!' : 'No policy changes detected yet'}
-          </h3>
-          <p style={{ fontSize: 14, color: 'var(--color-text-muted)', margin: 0 }}>
-            {filter === 'unacknowledged'
-              ? 'You have no unread policy change alerts.'
-              : 'Changes to your policies will appear here when detected.'}
-          </p>
-        </div>
+        <EmptyState
+          icon="✓"
+          title={filter === 'unacknowledged' ? 'All caught up!' : 'No policy changes detected yet'}
+          subtitle={filter === 'unacknowledged'
+            ? 'No new policy change alerts.'
+            : 'Changes to your policies will appear here when detected.'}
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {data.items.map((delta: PolicyDelta) => {
-            const config = severityConfig[delta.severity] || severityConfig.info;
+            const config = ALERT_SEVERITY_CONFIG[delta.severity] || ALERT_SEVERITY_CONFIG.info;
             const explanation = explanations[delta.id] || (delta.explanation ? { explanation: delta.explanation, reasons: [] } : null);
 
             return (
@@ -213,7 +183,7 @@ export default function AlertsPage() {
                     </span>
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                    {new Date(delta.created_at).toLocaleDateString()}
+                    {formatDate(delta.created_at)}
                   </span>
                 </div>
 
@@ -288,7 +258,7 @@ export default function AlertsPage() {
                         className="btn btn-outline"
                         style={{ padding: '6px 12px', fontSize: 12 }}
                       >
-                        Mark as Read
+                        Acknowledge
                       </button>
                     )}
                     <button

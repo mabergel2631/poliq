@@ -1,11 +1,13 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .auth import get_current_user
 from .coverage_taxonomy import analyze_coverage_gaps, get_coverage_summary
 from .db import get_db
-from .models import User, Policy, Exposure, Contact, PolicyDetail
+from .models import User, Policy, Exposure
 from .schemas import ExposureCreate, ExposureUpdate, ExposureOut
 
 router = APIRouter(prefix="/exposures", tags=["exposures"])
@@ -26,28 +28,32 @@ def list_exposures(db: Session = Depends(get_db), user: User = Depends(get_curre
         select(Exposure).where(Exposure.user_id == user.id).order_by(Exposure.name)
     ).scalars().all()
 
-    result = []
-    for exp in exposures:
-        policy_count = db.execute(
-            select(func.count(Policy.id)).where(Policy.exposure_id == exp.id)
-        ).scalar() or 0
+    if not exposures:
+        return []
 
-        total_coverage = db.execute(
-            select(func.coalesce(func.sum(Policy.coverage_amount), 0)).where(Policy.exposure_id == exp.id)
-        ).scalar() or 0
+    # Batch aggregate: count + sum coverage per exposure in one query
+    exposure_ids = [e.id for e in exposures]
+    stats_rows = db.execute(
+        select(
+            Policy.exposure_id,
+            func.count(Policy.id),
+            func.coalesce(func.sum(Policy.coverage_amount), 0),
+        )
+        .where(Policy.exposure_id.in_(exposure_ids))
+        .group_by(Policy.exposure_id)
+    ).all()
+    stats = {row[0]: (row[1], row[2]) for row in stats_rows}
 
-        result.append({
-            "id": exp.id,
-            "user_id": exp.user_id,
-            "name": exp.name,
-            "exposure_type": exp.exposure_type,
-            "description": exp.description,
-            "created_at": str(exp.created_at),
-            "policy_count": policy_count,
-            "total_coverage": total_coverage,
-        })
-
-    return result
+    return [{
+        "id": exp.id,
+        "user_id": exp.user_id,
+        "name": exp.name,
+        "exposure_type": exp.exposure_type,
+        "description": exp.description,
+        "created_at": str(exp.created_at),
+        "policy_count": stats.get(exp.id, (0, 0))[0],
+        "total_coverage": stats.get(exp.id, (0, 0))[1],
+    } for exp in exposures]
 
 
 @router.get("/{exposure_id}")
@@ -56,25 +62,25 @@ def get_exposure(exposure_id: int, db: Session = Depends(get_db), user: User = D
     if not exposure or exposure.user_id != user.id:
         raise HTTPException(status_code=404, detail="Exposure not found")
 
-    # Get linked policies
+    # Get linked policies with contacts and details eagerly loaded
     policies = db.execute(
-        select(Policy).where(Policy.exposure_id == exposure_id).order_by(Policy.id.desc())
-    ).scalars().all()
+        select(Policy).where(Policy.exposure_id == exposure_id)
+        .options(selectinload(Policy.contacts), selectinload(Policy.details))
+        .order_by(Policy.id.desc())
+    ).unique().scalars().all()
 
     # Build policy dicts for gap analysis
     policy_dicts = []
     policy_list = []
     for p in policies:
-        contacts = db.execute(select(Contact).where(Contact.policy_id == p.id)).scalars().all()
-        details = db.execute(select(PolicyDetail).where(PolicyDetail.policy_id == p.id)).scalars().all()
         policy_dicts.append({
             "id": p.id, "policy_type": p.policy_type, "carrier": p.carrier,
             "coverage_amount": p.coverage_amount, "deductible": p.deductible,
             "premium_amount": p.premium_amount,
             "renewal_date": str(p.renewal_date) if p.renewal_date else None,
             "created_at": str(p.created_at) if p.created_at else None,
-            "contacts": [{"role": c.role, "name": c.name, "phone": c.phone} for c in contacts],
-            "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in details],
+            "contacts": [{"role": c.role, "name": c.name, "phone": c.phone} for c in p.contacts],
+            "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in p.details],
         })
         policy_list.append({
             "id": p.id, "carrier": p.carrier, "policy_type": p.policy_type,

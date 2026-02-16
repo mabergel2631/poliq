@@ -7,7 +7,7 @@ import { agentApi, AgentOverview, AgentClient } from '../../../lib/api';
 
 function ScoreBadge({ score }: { score: number | null }) {
   if (score === null || score === undefined) return <span style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>--</span>;
-  const color = score >= 70 ? '#16a34a' : score >= 40 ? '#d97706' : '#dc2626';
+  const color = score >= 70 ? 'var(--color-success)' : score >= 40 ? 'var(--color-warning)' : 'var(--color-danger)';
   return (
     <span style={{
       display: 'inline-block',
@@ -64,7 +64,7 @@ export default function AdvisorDashboard() {
   if (error) {
     return (
       <div style={{ padding: 40, textAlign: 'center' }}>
-        <p style={{ color: '#dc2626' }}>{error}</p>
+        <p style={{ color: 'var(--color-danger)' }}>{error}</p>
       </div>
     );
   }

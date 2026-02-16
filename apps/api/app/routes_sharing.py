@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -58,11 +60,15 @@ def list_shares(policy_id: int, db: Session = Depends(get_db), user: User = Depe
 
 @router.get("/policies/shared-with-me")
 def shared_with_me(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    today = date.today()
     rows = db.execute(
         select(PolicyShare, Policy)
         .join(Policy, PolicyShare.policy_id == Policy.id)
         .where(PolicyShare.shared_with_email == user.email)
         .where(PolicyShare.accepted == True)  # noqa: E712
+        .where(
+            (PolicyShare.expires_at.is_(None)) | (PolicyShare.expires_at >= today)
+        )
     ).all()
 
     return [
@@ -89,11 +95,15 @@ def shared_with_me(db: Session = Depends(get_db), user: User = Depends(get_curre
 
 @router.get("/shares/pending")
 def pending_shares(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    today = date.today()
     rows = db.execute(
         select(PolicyShare, Policy)
         .join(Policy, PolicyShare.policy_id == Policy.id)
         .where(PolicyShare.shared_with_email == user.email)
         .where(PolicyShare.accepted == False)  # noqa: E712
+        .where(
+            (PolicyShare.expires_at.is_(None)) | (PolicyShare.expires_at >= today)
+        )
     ).all()
 
     return [

@@ -10,6 +10,7 @@ from app.db import engine, Base
 from app.models import User, Policy, Contact, CoverageItem, PolicyDetail, PasswordReset, Exposure  # noqa: F401 — register models
 from app.models_documents import Document  # noqa: F401
 from app.models_features import Premium, Claim, RenewalReminder, AuditLog, PolicyShare, EmergencyCard, PremiumHistory, PolicyDelta, DeltaExplanation, CoverageScore, InboundAddress, InboundEmail, PolicyDraft, Certificate, CertificateReminder  # noqa: F401
+from app.models_profile import UserProfile, ProfileContact  # noqa: F401
 
 from app.routes_auth import router as auth_router
 from app.routes_policies import router as policies_router
@@ -35,6 +36,7 @@ from app.routes_inbound import router as inbound_router
 from app.routes_agent import router as agent_router
 from app.routes_exposures import router as exposures_router
 from app.routes_certificates import router as certificates_router
+from app.routes_profile import router as profile_router
 
 app = FastAPI(title="Covrabl API")
 
@@ -129,3 +131,4 @@ app.include_router(inbound_router)
 app.include_router(agent_router)
 app.include_router(exposures_router)
 app.include_router(certificates_router)
+app.include_router(profile_router)

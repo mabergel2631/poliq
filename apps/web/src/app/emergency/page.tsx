@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
-import { policiesApi, contactsApi, documentsApi, policyDetailsApi, iceApi, Policy, Contact, DocMeta, PolicyDetail, EmergencyCardData } from '../../../lib/api';
+import { policiesApi, contactsApi, documentsApi, policyDetailsApi, iceApi, profileApi, Policy, Contact, DocMeta, PolicyDetail, EmergencyCardData } from '../../../lib/api';
 import { PolicyListSkeleton } from '../components/Skeleton';
+import { useToast } from '../components/Toast';
+import BackButton from '../components/BackButton';
+import EmptyState from '../components/EmptyState';
 import { APP_NAME } from '../config';
 import { cacheEmergencyData, getCachedEmergencyData, formatCacheTimestamp } from '../../../lib/offlineCache';
 
@@ -107,21 +110,7 @@ const DEFAULT_PLAYBOOK = {
   tip: 'Report claims promptly. Delays can complicate the process.',
 };
 
-// Policy type display config (matches policies page)
-const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string }> = {
-  auto: { icon: '🚗', label: 'Auto' },
-  home: { icon: '🏠', label: 'Home' },
-  health: { icon: '🏥', label: 'Health' },
-  renters: { icon: '🏢', label: 'Renters' },
-  life: { icon: '❤️', label: 'Life' },
-  liability: { icon: '🛡️', label: 'Liability' },
-  umbrella: { icon: '☂️', label: 'Umbrella' },
-  workers_comp: { icon: '👷', label: 'Workers Comp' },
-  other: { icon: '📋', label: 'Other' },
-};
-
-// Emergency-priority order for grouping
-const TYPE_ORDER = ['auto', 'home', 'health', 'renters', 'life', 'liability', 'umbrella', 'workers_comp', 'other'];
+import { getPolicyTypeDisplay, EMERGENCY_TYPE_ORDER } from '../constants';
 
 type PolicyEmergencyData = {
   policy: Policy;
@@ -133,6 +122,7 @@ type PolicyEmergencyData = {
 export default function EmergencyPage() {
   const { token, logout } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   const [data, setData] = useState<PolicyEmergencyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -255,6 +245,21 @@ export default function EmergencyPage() {
   };
 
   // ICE Card handlers
+  const handleStartIceSetup = async () => {
+    setShowIceSetup(true);
+    try {
+      const prefill = await profileApi.getIcePrefill();
+      setIceForm(prev => ({
+        ...prev,
+        holder_name: prev.holder_name || prefill.holder_name || '',
+        emergency_contact_name: prev.emergency_contact_name || prefill.emergency_contact_name || '',
+        emergency_contact_phone: prev.emergency_contact_phone || prefill.emergency_contact_phone || '',
+      }));
+    } catch {
+      // Profile prefill is best-effort; ignore errors
+    }
+  };
+
   const handleCreateIceCard = async () => {
     if (!iceForm.holder_name.trim()) return;
     setIceSaving(true);
@@ -271,7 +276,7 @@ export default function EmergencyPage() {
       setIceCard(card);
       setShowIceSetup(false);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, 'error');
     } finally {
       setIceSaving(false);
     }
@@ -284,7 +289,7 @@ export default function EmergencyPage() {
       const { card } = await iceApi.get();
       setIceCard(card);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, 'error');
     }
   };
 
@@ -295,7 +300,7 @@ export default function EmergencyPage() {
       const { card } = await iceApi.get();
       setIceCard(card);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, 'error');
     }
   };
 
@@ -305,7 +310,7 @@ export default function EmergencyPage() {
       await iceApi.delete();
       setIceCard(null);
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, 'error');
     }
   };
 
@@ -319,31 +324,15 @@ export default function EmergencyPage() {
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      {/* Back navigation */}
-      <button
-        onClick={() => router.push('/policies')}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 6,
-          background: 'none',
-          border: 'none',
-          color: 'var(--color-text-secondary)',
-          fontSize: 14,
-          cursor: 'pointer',
-          padding: '0 0 16px',
-        }}
-      >
-        ← Policies
-      </button>
+      <BackButton href="/policies" label="Policies" />
 
       {/* Offline Banner */}
       {(!isOnline || isUsingCache) && (
         <div style={{
           padding: '12px 16px',
           marginBottom: 16,
-          backgroundColor: !isOnline ? '#fef3c7' : '#e0f2fe',
-          border: `1px solid ${!isOnline ? '#fcd34d' : '#7dd3fc'}`,
+          backgroundColor: !isOnline ? 'var(--color-warning-light)' : 'var(--color-info-light)',
+          border: `1px solid ${!isOnline ? 'var(--color-warning-border)' : 'var(--color-info-border)'}`,
           borderRadius: 'var(--radius-md)',
           display: 'flex',
           alignItems: 'center',
@@ -351,7 +340,7 @@ export default function EmergencyPage() {
         }}>
           <span style={{ fontSize: 20 }}>{!isOnline ? '📡' : '💾'}</span>
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: !isOnline ? '#92400e' : '#0369a1' }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: !isOnline ? 'var(--color-warning-dark)' : 'var(--color-info-dark)' }}>
               {!isOnline ? 'You are offline' : 'Viewing cached data'}
             </div>
             {cacheTimestamp && (
@@ -367,10 +356,10 @@ export default function EmergencyPage() {
                 marginLeft: 'auto',
                 padding: '6px 12px',
                 fontSize: 12,
-                border: '1px solid #0369a1',
+                border: '1px solid var(--color-info-dark)',
                 borderRadius: 4,
                 backgroundColor: '#fff',
-                color: '#0369a1',
+                color: 'var(--color-info-dark)',
                 cursor: 'pointer',
               }}
             >
@@ -382,7 +371,7 @@ export default function EmergencyPage() {
 
       {/* Emergency Header - Action First */}
       <div style={{
-        background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)',
+        background: 'linear-gradient(135deg, var(--color-danger) 0%, var(--color-danger-dark) 100%)',
         color: '#fff',
         borderRadius: 'var(--radius-lg)',
         padding: '28px 32px',
@@ -405,7 +394,7 @@ export default function EmergencyPage() {
                   href={`tel:${claimsPhone.replace(/[^\d+]/g, '')}`}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px',
-                    backgroundColor: '#fff', color: '#dc2626', borderRadius: 8,
+                    backgroundColor: '#fff', color: 'var(--color-danger)', borderRadius: 8,
                     textDecoration: 'none', fontSize: 15, fontWeight: 700,
                   }}
                 >
@@ -456,7 +445,7 @@ export default function EmergencyPage() {
                 Create an emergency card that family members can access if something happens to you.
               </p>
               <button
-                onClick={() => setShowIceSetup(true)}
+                onClick={handleStartIceSetup}
                 className="btn btn-accent"
                 style={{ padding: '12px 24px', fontSize: 15, fontWeight: 600 }}
               >
@@ -571,7 +560,7 @@ export default function EmergencyPage() {
             <div>
               <div style={{
                 padding: 16,
-                backgroundColor: iceCard.is_active ? '#f0fdf4' : '#f3f4f6',
+                backgroundColor: iceCard.is_active ? 'var(--color-success-bg)' : '#f3f4f6',
                 borderRadius: 8,
                 marginBottom: 16,
               }}>
@@ -582,8 +571,8 @@ export default function EmergencyPage() {
                       borderRadius: 4,
                       fontSize: 11,
                       fontWeight: 600,
-                      backgroundColor: iceCard.is_active ? '#dcfce7' : '#e5e7eb',
-                      color: iceCard.is_active ? '#166534' : '#6b7280',
+                      backgroundColor: iceCard.is_active ? 'var(--color-success-light)' : '#e5e7eb',
+                      color: iceCard.is_active ? 'var(--color-success-dark)' : '#6b7280',
                     }}>
                       {iceCard.is_active ? 'ACTIVE' : 'INACTIVE'}
                     </span>
@@ -594,8 +583,8 @@ export default function EmergencyPage() {
                         borderRadius: 4,
                         fontSize: 11,
                         fontWeight: 600,
-                        backgroundColor: '#dbeafe',
-                        color: '#1d4ed8',
+                        backgroundColor: 'var(--color-info-light)',
+                        color: 'var(--color-info)',
                       }}>
                         🔐 PIN Protected
                       </span>
@@ -661,7 +650,7 @@ export default function EmergencyPage() {
                 <button
                   onClick={handleDeleteIceCard}
                   className="btn btn-outline"
-                  style={{ padding: '8px 16px', fontSize: 13, color: '#dc2626', borderColor: '#dc2626' }}
+                  style={{ padding: '8px 16px', fontSize: 13, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}
                 >
                   Delete
                 </button>
@@ -675,12 +664,13 @@ export default function EmergencyPage() {
       {loading ? (
         <PolicyListSkeleton />
       ) : data.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🚨</div>
-          <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>No coverage added yet</h3>
-          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>Add your policies to access them quickly in an emergency.</p>
-          <button onClick={() => router.push('/policies')} className="btn btn-primary">Add Coverage</button>
-        </div>
+        <EmptyState
+          icon="🚨"
+          title="No coverage added yet"
+          subtitle="Add your policies to access them quickly in an emergency."
+          actionLabel="Add Coverage"
+          actionHref="/policies"
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           {(() => {
@@ -693,14 +683,14 @@ export default function EmergencyPage() {
             });
             // Sort groups by emergency-priority order
             const sortedTypes = Object.keys(groups).sort((a, b) => {
-              const ai = TYPE_ORDER.indexOf(a);
-              const bi = TYPE_ORDER.indexOf(b);
+              const ai = EMERGENCY_TYPE_ORDER.indexOf(a);
+              const bi = EMERGENCY_TYPE_ORDER.indexOf(b);
               return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
             });
 
             return sortedTypes.map(type => {
               const group = groups[type];
-              const config = POLICY_TYPE_CONFIG[type] || { icon: '📋', label: type.charAt(0).toUpperCase() + type.slice(1) };
+              const config = getPolicyTypeDisplay(type);
               const expandedItem = group.find(d => d.policy.id === expandedId);
 
               return (

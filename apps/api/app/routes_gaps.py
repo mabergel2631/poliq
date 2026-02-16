@@ -5,14 +5,32 @@ Analyzes user's policies and identifies coverage gaps.
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .auth import get_current_user
 from .db import get_db
-from .models import Policy, PolicyDetail, Contact, User
+from .models import Policy, Contact, User
+from .models_profile import UserProfile
 from .coverage_taxonomy import analyze_coverage_gaps, get_coverage_summary
 
 router = APIRouter(prefix="/gaps", tags=["gap-analysis"])
+
+
+def _build_user_context(db: Session, user_id: int) -> dict:
+    """Load context flags from user profile for gap analysis."""
+    profile = db.execute(
+        select(UserProfile).where(UserProfile.user_id == user_id)
+    ).scalar_one_or_none()
+    if not profile:
+        return {}
+    return {
+        "is_homeowner": profile.is_homeowner,
+        "is_renter": profile.is_renter,
+        "has_dependents": profile.has_dependents,
+        "has_vehicle": profile.has_vehicle,
+        "owns_business": profile.owns_business,
+        "high_net_worth": profile.high_net_worth,
+    }
 
 
 @router.get("")
@@ -20,44 +38,14 @@ def get_gap_analysis(db: Session = Depends(get_db), user: User = Depends(get_cur
     """
     Analyze the user's policies and return identified coverage gaps.
     """
-    # Fetch all user's policies with details
     policies = db.execute(
         select(Policy).where(Policy.user_id == user.id)
-    ).scalars().all()
+        .options(selectinload(Policy.contacts), selectinload(Policy.details))
+    ).unique().scalars().all()
 
-    # Build policy dicts with details and contacts
-    policy_data = []
-    for p in policies:
-        details = db.execute(
-            select(PolicyDetail).where(PolicyDetail.policy_id == p.id)
-        ).scalars().all()
-
-        contacts = db.execute(
-            select(Contact).where(Contact.policy_id == p.id)
-        ).scalars().all()
-
-        policy_data.append({
-            "id": p.id,
-            "policy_type": p.policy_type,
-            "carrier": p.carrier,
-            "policy_number": p.policy_number,
-            "coverage_amount": p.coverage_amount,
-            "deductible": p.deductible,
-            "premium_amount": p.premium_amount,
-            "renewal_date": str(p.renewal_date) if p.renewal_date else None,
-            "created_at": str(p.created_at) if p.created_at else None,
-            "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in details],
-            "contacts": [{"role": c.role, "phone": c.phone, "email": c.email} for c in contacts]
-        })
-
-    # TODO: In the future, we could store user context (has_dependents, is_homeowner, etc.)
-    # For now, we'll infer what we can from their policies
-    user_context = {}
-
-    # Run gap analysis
+    policy_data = _serialize_policies(policies)
+    user_context = _build_user_context(db, user.id)
     gaps = analyze_coverage_gaps(policy_data, user_context)
-
-    # Get coverage summary
     summary = get_coverage_summary(policy_data)
 
     return {
@@ -87,34 +75,29 @@ def get_coverage_summary_only(db: Session = Depends(get_db), user: User = Depend
     return get_coverage_summary(policy_data)
 
 
-def _build_policy_data(db: Session, user_id: int) -> list[dict]:
-    """Build policy dicts with details and contacts for gap analysis."""
-    policies = db.execute(
-        select(Policy).where(Policy.user_id == user_id)
-    ).scalars().all()
+def _serialize_policies(policies: list[Policy]) -> list[dict]:
+    """Serialize eagerly-loaded Policy objects to dicts for gap analysis."""
+    return [{
+        "id": p.id,
+        "policy_type": p.policy_type,
+        "carrier": p.carrier,
+        "policy_number": p.policy_number,
+        "coverage_amount": p.coverage_amount,
+        "deductible": p.deductible,
+        "premium_amount": p.premium_amount,
+        "renewal_date": str(p.renewal_date) if p.renewal_date else None,
+        "created_at": str(p.created_at) if p.created_at else None,
+        "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in p.details],
+        "contacts": [{"role": c.role, "phone": c.phone, "email": c.email} for c in p.contacts],
+    } for p in policies]
 
-    policy_data = []
-    for p in policies:
-        details = db.execute(
-            select(PolicyDetail).where(PolicyDetail.policy_id == p.id)
-        ).scalars().all()
-        contacts = db.execute(
-            select(Contact).where(Contact.policy_id == p.id)
-        ).scalars().all()
-        policy_data.append({
-            "id": p.id,
-            "policy_type": p.policy_type,
-            "carrier": p.carrier,
-            "policy_number": p.policy_number,
-            "coverage_amount": p.coverage_amount,
-            "deductible": p.deductible,
-            "premium_amount": p.premium_amount,
-            "renewal_date": str(p.renewal_date) if p.renewal_date else None,
-            "created_at": str(p.created_at) if p.created_at else None,
-            "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in details],
-            "contacts": [{"role": c.role, "phone": c.phone, "email": c.email} for c in contacts]
-        })
-    return policy_data
+
+def _load_policies_eager(db: Session, user_id: int) -> list[Policy]:
+    """Load all user policies with contacts and details eagerly."""
+    return db.execute(
+        select(Policy).where(Policy.user_id == user_id)
+        .options(selectinload(Policy.contacts), selectinload(Policy.details))
+    ).unique().scalars().all()
 
 
 @router.get("/business/{business_name}")
@@ -134,52 +117,31 @@ def get_business_entity_gaps(
             Policy.user_id == user.id,
             Policy.business_name == decoded_name,
         )
-    ).scalars().all()
+        .options(selectinload(Policy.contacts), selectinload(Policy.details))
+    ).unique().scalars().all()
 
     if not policies:
         raise HTTPException(status_code=404, detail="No policies found for this business entity")
 
-    policy_data = []
-    policy_list = []
+    policy_data = _serialize_policies(policies)
+
+    policy_list = [{
+        "id": p.id,
+        "carrier": p.carrier,
+        "policy_type": p.policy_type,
+        "policy_number": p.policy_number,
+        "nickname": p.nickname,
+        "business_name": p.business_name,
+        "coverage_amount": p.coverage_amount,
+        "deductible": p.deductible,
+        "premium_amount": p.premium_amount,
+        "status": p.status or "active",
+        "renewal_date": str(p.renewal_date) if p.renewal_date else None,
+    } for p in policies]
+
     all_contacts = []
-
     for p in policies:
-        details = db.execute(
-            select(PolicyDetail).where(PolicyDetail.policy_id == p.id)
-        ).scalars().all()
-        contacts = db.execute(
-            select(Contact).where(Contact.policy_id == p.id)
-        ).scalars().all()
-
-        policy_data.append({
-            "id": p.id,
-            "policy_type": p.policy_type,
-            "carrier": p.carrier,
-            "policy_number": p.policy_number,
-            "coverage_amount": p.coverage_amount,
-            "deductible": p.deductible,
-            "premium_amount": p.premium_amount,
-            "renewal_date": str(p.renewal_date) if p.renewal_date else None,
-            "created_at": str(p.created_at) if p.created_at else None,
-            "details": [{"field_name": d.field_name, "field_value": d.field_value} for d in details],
-            "contacts": [{"role": c.role, "phone": c.phone, "email": c.email} for c in contacts],
-        })
-
-        policy_list.append({
-            "id": p.id,
-            "carrier": p.carrier,
-            "policy_type": p.policy_type,
-            "policy_number": p.policy_number,
-            "nickname": p.nickname,
-            "business_name": p.business_name,
-            "coverage_amount": p.coverage_amount,
-            "deductible": p.deductible,
-            "premium_amount": p.premium_amount,
-            "status": p.status or "active",
-            "renewal_date": str(p.renewal_date) if p.renewal_date else None,
-        })
-
-        for c in contacts:
+        for c in p.contacts:
             all_contacts.append({
                 "id": c.id,
                 "policy_id": c.policy_id,
@@ -191,7 +153,8 @@ def get_business_entity_gaps(
                 "notes": c.notes,
             })
 
-    gaps = analyze_coverage_gaps(policy_data, {})
+    user_context = _build_user_context(db, user.id)
+    gaps = analyze_coverage_gaps(policy_data, user_context)
     summary = get_coverage_summary(policy_data)
 
     # Certificates linked to this entity's policies
@@ -235,8 +198,10 @@ def get_policy_gaps(policy_id: int, db: Session = Depends(get_db), user: User = 
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
 
-    policy_data = _build_policy_data(db, user.id)
-    gaps = analyze_coverage_gaps(policy_data, {})
+    policies = _load_policies_eager(db, user.id)
+    policy_data = _serialize_policies(policies)
+    user_context = _build_user_context(db, user.id)
+    gaps = analyze_coverage_gaps(policy_data, user_context)
 
     policy_gaps = [
         g for g in gaps

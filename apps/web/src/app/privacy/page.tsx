@@ -1,12 +1,28 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { APP_NAME } from '../config';
+import { APP_NAME, APP_PRIVACY_EMAIL, APP_CONTACT_EMAIL } from '../config';
+import { useAuth } from '../../../lib/auth';
+import { exportApi } from '../../../lib/api';
 
 export default function PrivacyPage() {
   const router = useRouter();
+  const { token } = useAuth();
+  const [exporting, setExporting] = useState(false);
   const effectiveDate = 'February 12, 2026';
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportApi.allPolicies();
+    } catch {
+      alert('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px 24px 80px' }}>
@@ -187,7 +203,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           To exercise any of these rights, contact us at{' '}
-          <a href="mailto:privacy@covrabl.com" style={{ color: 'var(--color-accent)' }}>privacy@covrabl.com</a>.
+          <a href={`mailto:${APP_PRIVACY_EMAIL}`} style={{ color: 'var(--color-accent)' }}>{APP_PRIVACY_EMAIL}</a>.
         </p>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, margin: '40px 0 12px', color: 'var(--color-text)' }}>
@@ -223,6 +239,30 @@ export default function PrivacyPage() {
           to protect your data.
         </p>
 
+        {/* Export your data — visible when logged in */}
+        {token && (
+          <div style={{ margin: '40px 0', padding: '24px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px', color: 'var(--color-text)' }}>
+              Export your data
+            </h3>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 16px', lineHeight: 1.6 }}>
+              Download all your policy data as a CSV file. This includes policy details, coverage amounts, deductibles, and renewal dates.
+            </p>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              style={{
+                padding: '10px 20px', fontSize: 14, fontWeight: 600,
+                backgroundColor: 'var(--color-primary)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-md)', cursor: exporting ? 'not-allowed' : 'pointer',
+                opacity: exporting ? 0.7 : 1,
+              }}
+            >
+              {exporting ? 'Exporting...' : 'Download CSV'}
+            </button>
+          </div>
+        )}
+
         <h2 style={{ fontSize: 20, fontWeight: 700, margin: '40px 0 12px', color: 'var(--color-text)' }}>
           Changes to this policy
         </h2>
@@ -239,8 +279,8 @@ export default function PrivacyPage() {
           If you have questions about this Privacy Policy or how your data is handled, please contact us:
         </p>
         <ul style={{ paddingLeft: 24, margin: '8px 0 16px', listStyle: 'none' }}>
-          <li style={{ marginBottom: 8 }}>Email: <a href="mailto:privacy@covrabl.com" style={{ color: 'var(--color-accent)' }}>privacy@covrabl.com</a></li>
-          <li style={{ marginBottom: 8 }}>General: <a href="mailto:support@covrabl.com" style={{ color: 'var(--color-accent)' }}>support@covrabl.com</a></li>
+          <li style={{ marginBottom: 8 }}>Email: <a href={`mailto:${APP_PRIVACY_EMAIL}`} style={{ color: 'var(--color-accent)' }}>{APP_PRIVACY_EMAIL}</a></li>
+          <li style={{ marginBottom: 8 }}>General: <a href={`mailto:${APP_CONTACT_EMAIL}`} style={{ color: 'var(--color-accent)' }}>{APP_CONTACT_EMAIL}</a></li>
         </ul>
       </div>
 

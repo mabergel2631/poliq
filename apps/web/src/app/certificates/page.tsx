@@ -6,6 +6,8 @@ import { useAuth } from '../../../lib/auth';
 import { certificatesApi, policiesApi, Certificate, CertificateCreate, Policy } from '../../../lib/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import TabNav from '../components/TabNav';
+import { CERT_STATUS_COLORS } from '../constants';
 
 const COUNTERPARTY_TYPES = [
   { value: 'landlord', label: 'Landlord' },
@@ -18,12 +20,7 @@ const COUNTERPARTY_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  active: { bg: '#dcfce7', text: '#166534' },
-  expiring: { bg: '#fef9c3', text: '#854d0e' },
-  expired: { bg: '#fee2e2', text: '#991b1b' },
-  pending: { bg: '#f3f4f6', text: '#374151' },
-};
+// Use CERT_STATUS_COLORS from constants
 
 const COVERAGE_TYPE_OPTIONS = ['General Liability', 'Auto', 'Workers Comp', 'Umbrella', 'Professional Liability', 'Property'];
 
@@ -229,21 +226,17 @@ export default function CertificatesPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderBottom: '2px solid var(--color-border)' }}>
-        {(['all', 'issued', 'received'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            style={{
-              padding: '10px 20px', border: 'none', borderBottom: tab === t ? '2px solid var(--color-primary)' : '2px solid transparent',
-              marginBottom: -2, backgroundColor: 'transparent', fontWeight: tab === t ? 600 : 400,
-              color: tab === t ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              cursor: 'pointer', fontSize: 14, textTransform: 'capitalize',
-            }}
-          >
-            {t === 'all' ? `All (${certificates.length})` : `${t} (${certificates.filter(c => c.direction === t).length})`}
-          </button>
-        ))}
+      <div style={{ marginBottom: 24 }}>
+        <TabNav
+          variant="underline"
+          activeKey={tab}
+          onSelect={(key) => setTab(key as 'all' | 'issued' | 'received')}
+          tabs={[
+            { key: 'all', label: `All (${certificates.length})` },
+            { key: 'issued', label: `Issued (${certificates.filter(c => c.direction === 'issued').length})` },
+            { key: 'received', label: `Received (${certificates.filter(c => c.direction === 'received').length})` },
+          ]}
+        />
       </div>
 
       {/* Empty state */}
@@ -286,7 +279,7 @@ export default function CertificatesPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {group.certs.map(cert => {
-                const sc = STATUS_COLORS[cert.status] || STATUS_COLORS.pending;
+                const sc = CERT_STATUS_COLORS[cert.status] || CERT_STATUS_COLORS.pending;
                 const ctLabel = COUNTERPARTY_TYPES.find(ct => ct.value === cert.counterparty_type)?.label || cert.counterparty_type;
                 const linkedPolicy = cert.policy_id ? policyMap.get(cert.policy_id) : null;
                 return (
@@ -310,7 +303,7 @@ export default function CertificatesPage() {
                           </span>
                           <span style={{
                             display: 'inline-block', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
-                            backgroundColor: sc.bg, color: sc.text,
+                            backgroundColor: sc.bg, color: sc.fg,
                           }}>
                             {cert.status}
                           </span>
@@ -319,7 +312,7 @@ export default function CertificatesPage() {
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => startEdit(cert)} style={{ padding: '4px 10px', fontSize: 12, border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', cursor: 'pointer' }}>Edit</button>
-                        <button onClick={() => setDeleteConfirm(cert.id)} style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #fca5a5', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', color: '#dc2626', cursor: 'pointer' }}>Delete</button>
+                        <button onClick={() => setDeleteConfirm(cert.id)} style={{ padding: '4px 10px', fontSize: 12, border: '1px solid var(--color-danger-border)', borderRadius: 'var(--radius-sm)', backgroundColor: '#fff', color: 'var(--color-danger)', cursor: 'pointer' }}>Delete</button>
                       </div>
                     </div>
 
