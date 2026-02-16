@@ -201,28 +201,33 @@ export default function Home() {
       {/* 6. COMPARISON */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 48px', textAlign: 'center', color: 'var(--color-text)' }}>
-            Without {APP_NAME} vs. with {APP_NAME}
+          <h2 style={{ fontSize: 28, fontWeight: 700, margin: '0 0 16px', textAlign: 'center', color: 'var(--color-text)' }}>
+            Insurance management has barely changed. Until now.
           </h2>
+          <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: '0 0 48px', textAlign: 'center', lineHeight: 1.7 }}>
+            Most people still manage insurance the same way they did 20 years ago.
+          </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 32 }}>
-            <div className="card" style={{ padding: 32 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-text-muted)' }}>Without {APP_NAME}</h3>
-              <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text-secondary)', lineHeight: 2 }}>
-                <li>Coverage gaps invisible until a claim is denied</li>
-                <li>No idea how strong your protection is</li>
-                <li>Renewals missed or noticed too late</li>
-                <li>Policy changes go unnoticed</li>
-                <li>No safe emergency access</li>
+            <div className="card" style={{ padding: 32, backgroundColor: '#fafafa' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 20px', color: 'var(--color-text-muted)' }}>The old way</h3>
+              <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text-secondary)', lineHeight: 2.2, listStyleType: "'\\2717  '" }}>
+                <li>Paper policies stuffed in a drawer</li>
+                <li>PDFs buried across email threads</li>
+                <li>Calling your agent and waiting on hold</li>
+                <li>No idea what&apos;s actually covered</li>
+                <li>Finding out about a gap when a claim is denied</li>
+                <li>Renewals missed because no one was tracking</li>
               </ul>
             </div>
             <div className="card" style={{ padding: 32, borderColor: 'var(--color-primary)', borderWidth: 2 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 16px', color: 'var(--color-primary)' }}>With {APP_NAME}</h3>
-              <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text)', lineHeight: 2 }}>
-                <li>Gaps detected and flagged automatically</li>
-                <li>Protection Score shows your strength at a glance</li>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: '0 0 20px', color: 'var(--color-primary)' }}>The {APP_NAME} way</h3>
+              <ul style={{ margin: 0, paddingLeft: 20, color: 'var(--color-text)', lineHeight: 2.2, listStyleType: "'\\2713  '" }}>
+                <li>Upload once — AI reads and organizes everything</li>
+                <li>Every policy scored, analyzed, and monitored</li>
+                <li>Gaps and changes surfaced automatically</li>
                 <li>Renewal alerts before every deadline</li>
-                <li>Changes spotted and explained in plain language</li>
-                <li>Secure emergency-ready sharing</li>
+                <li>Know exactly where you stand at a glance</li>
+                <li>Emergency access for the people who need it</li>
               </ul>
             </div>
           </div>
