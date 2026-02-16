@@ -1,6 +1,6 @@
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE?.trim() ||
-  "https://poliq-production.up.railway.app";
+  "https://covrabl-api.up.railway.app";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
