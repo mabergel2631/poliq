@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
 import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData } from '../../../lib/api';
 import { useToast } from '../components/Toast';
@@ -37,8 +37,17 @@ const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string; group: '
 const POLICY_TYPES = Object.keys(POLICY_TYPE_CONFIG);
 
 export default function PoliciesPage() {
+  return (
+    <Suspense>
+      <PoliciesPageInner />
+    </Suspense>
+  );
+}
+
+function PoliciesPageInner() {
   const { token, logout } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [renewals, setRenewals] = useState<RenewalItem[]>([]);
   const [annualSpend, setAnnualSpend] = useState<number>(0);
@@ -75,6 +84,21 @@ export default function PoliciesPage() {
     if (!token) { router.replace('/login'); return; }
     loadAll();
   }, [token]);
+
+  // Handle deep-link from entity page: ?addPolicy=true&scope=business&businessName=...
+  useEffect(() => {
+    if (loading) return;
+    const addPolicy = searchParams.get('addPolicy');
+    if (addPolicy === 'true') {
+      const scope = searchParams.get('scope') || '';
+      const bizName = searchParams.get('businessName') || '';
+      setWizardData({ scope, policy_type: '', business_name: bizName });
+      setShowAddModal(true);
+      setWizardStep(0); // Start at method choice — scope + business name already filled
+      // Clear the query params so refreshing doesn't re-trigger
+      router.replace('/policies', { scroll: false });
+    }
+  }, [loading, searchParams]);
 
   const loadAll = async () => {
     try {
@@ -848,10 +872,19 @@ export default function PoliciesPage() {
           <div style={{
             backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 32, maxWidth: 500, width: '100%', maxHeight: '90vh', overflow: 'auto'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: wizardData.business_name ? 12 : 24 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Add Policy</h2>
               <button onClick={() => { setShowAddModal(false); resetWizard(); }} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
             </div>
+
+            {/* Entity context banner */}
+            {wizardData.business_name && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#f0f9ff', border: '1px solid #bfdbfe', borderRadius: 'var(--radius-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                <span>🏢</span>
+                <span style={{ color: 'var(--color-text-secondary)' }}>Adding to</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{wizardData.business_name}</span>
+              </div>
+            )}
 
             {/* Step 0: Method Choice */}
             {wizardStep === 0 && (
@@ -859,7 +892,7 @@ export default function PoliciesPage() {
                 <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', marginBottom: 20 }}>How would you like to add your policy?</p>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <button
-                    onClick={() => { setWizardMethod('upload'); setWizardStep(1); }}
+                    onClick={() => { setWizardMethod('upload'); setWizardStep(wizardData.scope && wizardData.business_name ? 2 : 1); }}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 24,
                       border: '2px solid var(--color-border)', borderRadius: 'var(--radius-md)', backgroundColor: '#fff', cursor: 'pointer',
@@ -870,7 +903,7 @@ export default function PoliciesPage() {
                     <span style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center' }}>We&apos;ll extract everything automatically</span>
                   </button>
                   <button
-                    onClick={() => { setWizardMethod('url'); setWizardStep(1); }}
+                    onClick={() => { setWizardMethod('url'); setWizardStep(wizardData.scope && wizardData.business_name ? 2 : 1); }}
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 24,
                       border: '2px solid var(--color-border)', borderRadius: 'var(--radius-md)', backgroundColor: '#fff', cursor: 'pointer',
