@@ -21,39 +21,41 @@ export default function Home() {
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
       {/* ═══════════════════════════════════════════════════════════════
-          NAVIGATION
+          NAVIGATION (only shown when logged out — sidebar handles nav when logged in)
       ═══════════════════════════════════════════════════════════════ */}
-      <header className="landing-header" style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)',
-        borderBottom: '1px solid var(--color-border)',
-        padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <div
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          style={{ cursor: 'pointer' }}
-        >
-          <Logo size="md" variant="dark" />
-        </div>
-        <nav className="landing-nav-links">
-          <span onClick={() => scrollTo('how-it-works')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>How it works</span>
-          <span onClick={() => scrollTo('security')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Security</span>
-          <span onClick={() => scrollTo('faq')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>FAQ</span>
-          <button onClick={ctaAction} style={{
-            padding: '8px 20px', fontSize: 14, fontWeight: 600,
-            backgroundColor: 'var(--color-primary)', color: '#fff',
-            border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-          }}>
-            {token ? 'My Coverage' : 'Sign in'}
-          </button>
-        </nav>
-      </header>
+      {!token && (
+        <header className="landing-header" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)',
+          borderBottom: '1px solid var(--color-border)',
+          padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <div
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            style={{ cursor: 'pointer' }}
+          >
+            <Logo size="md" variant="dark" />
+          </div>
+          <nav className="landing-nav-links">
+            <span onClick={() => scrollTo('how-it-works')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>How it works</span>
+            <span onClick={() => scrollTo('security')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Security</span>
+            <span onClick={() => scrollTo('faq')} style={{ fontSize: 14, color: 'var(--color-text-secondary)', cursor: 'pointer' }}>FAQ</span>
+            <button onClick={() => router.push('/login')} style={{
+              padding: '8px 20px', fontSize: 14, fontWeight: 600,
+              backgroundColor: 'var(--color-primary)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+            }}>
+              Sign in
+            </button>
+          </nav>
+        </header>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════
           1. HERO
       ═══════════════════════════════════════════════════════════════ */}
       <section style={{
-        paddingTop: 120, paddingBottom: 80, paddingLeft: 24, paddingRight: 24,
+        paddingTop: token ? 60 : 120, paddingBottom: 80, paddingLeft: 24, paddingRight: 24,
         background: 'linear-gradient(160deg, #0f1f33 0%, var(--color-primary-dark) 30%, var(--color-primary) 70%, var(--color-primary-light) 100%)',
         color: '#fff',
         position: 'relative',
@@ -66,6 +68,17 @@ export default function Home() {
           pointerEvents: 'none',
         }} />
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          {/* Logo mark in hero */}
+          <div style={{ marginBottom: 24 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/covrabl-mark.svg"
+              alt="Covrabl"
+              width={64}
+              height={64}
+              style={{ display: 'inline-block', opacity: 0.9 }}
+            />
+          </div>
           <h1 style={{
             fontSize: 48, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.15,
             letterSpacing: 'var(--letter-spacing-tight)',
