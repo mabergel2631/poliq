@@ -1,3 +1,4 @@
+// Covrabl API backend
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE?.trim() ||
   "https://covrabl-api.up.railway.app";
