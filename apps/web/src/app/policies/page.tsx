@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
-import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, exposuresApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData, Exposure, ExposureCreate } from '../../../lib/api';
+import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData } from '../../../lib/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { APP_NAME } from '../config';
@@ -50,12 +50,9 @@ export default function PoliciesPage() {
   const [inboundAddress, setInboundAddress] = useState<InboundAddress | null>(null);
   const [pendingDrafts, setPendingDrafts] = useState<PolicyDraftData[]>([]);
   const [showDraftModal, setShowDraftModal] = useState<PolicyDraftData | null>(null);
-  const [exposures, setExposures] = useState<Exposure[]>([]);
-  const [groupByExposure, setGroupByExposure] = useState(false);
-  const [showExposureModal, setShowExposureModal] = useState(false);
-  const [newExposure, setNewExposure] = useState<ExposureCreate>({ name: '', exposure_type: '', description: '' });
   const [showEmailSettings, setShowEmailSettings] = useState(false);
   const [creatingAddress, setCreatingAddress] = useState(false);
+  const [scopeTab, setScopeTab] = useState<'all' | 'personal' | 'business'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -82,7 +79,7 @@ export default function PoliciesPage() {
   const loadAll = async () => {
     try {
       setLoading(true);
-      const [pols, rens, spend, shared, pending, alerts, gapsResult, addressResult, draftsResult, exps] = await Promise.all([
+      const [pols, rens, spend, shared, pending, alerts, gapsResult, addressResult, draftsResult] = await Promise.all([
         policiesApi.list(),
         renewalsApi.upcoming(90),
         premiumsApi.annualSpend(),
@@ -92,7 +89,6 @@ export default function PoliciesPage() {
         gapsApi.analyze().catch(() => ({ gaps: [], summary: null, policy_count: 0 })),
         inboundApi.getAddress().catch(() => ({ address: null })),
         inboundApi.listDrafts('pending').catch(() => ({ items: [], total: 0 })),
-        exposuresApi.list().catch(() => []),
       ]);
       setPolicies(Array.isArray(pols) ? pols : []);
       setRenewals(Array.isArray(rens) ? rens : []);
@@ -104,7 +100,6 @@ export default function PoliciesPage() {
       setCoverageSummary(gapsResult.summary || null);
       setInboundAddress(addressResult?.address || null);
       setPendingDrafts(draftsResult?.items || []);
-      setExposures(Array.isArray(exps) ? exps : []);
     } catch (err: any) {
       if (err.status === 401 || err.status === 403) { logout(); router.replace('/login'); return; }
       setError(err.message);
@@ -285,11 +280,15 @@ export default function PoliciesPage() {
 
   // Computed values for insights
   const activePolicies = policies.filter(p => p.carrier !== 'Pending extraction...');
-  const nextRenewal = renewals.length > 0 ? renewals[0] : null;
+  const hasMultipleScopes = activePolicies.some(p => p.scope === 'personal') && activePolicies.some(p => p.scope === 'business');
+  const scopedPolicies = scopeTab === 'all' ? activePolicies : activePolicies.filter(p => p.scope === scopeTab);
+  const scopedPolicyIds = new Set(scopedPolicies.map(p => p.id));
+  const scopedRenewals = scopeTab === 'all' ? renewals : renewals.filter(r => scopedPolicyIds.has(r.id));
+  const nextRenewal = scopedRenewals.length > 0 ? scopedRenewals[0] : null;
   const daysToNextRenewal = nextRenewal ? Math.ceil((new Date(nextRenewal.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
-  const urgentAlerts = smartAlerts.filter(a => a.severity === 'high');
+  const urgentAlerts = smartAlerts.filter(a => a.severity === 'high' && (scopeTab === 'all' || scopedPolicyIds.has(a.policy_id)));
   const typeCounts: Record<string, number> = {};
-  activePolicies.forEach(p => { typeCounts[p.policy_type] = (typeCounts[p.policy_type] || 0) + 1; });
+  scopedPolicies.forEach(p => { typeCounts[p.policy_type] = (typeCounts[p.policy_type] || 0) + 1; });
 
   // Compute policy-level status based on gaps
   const getPolicyStatus = (policyId: number): { status: 'ok' | 'warning' | 'alert'; label: string; color: string; bgColor: string } => {
@@ -305,9 +304,9 @@ export default function PoliciesPage() {
     return { status: 'ok', label: 'Good', color: '#166534', bgColor: '#dcfce7' };
   };
 
-  // Search filter
+  // Search filter (from scoped policies)
   const q = search.toLowerCase().trim();
-  const filteredPolicies = activePolicies.filter(p => {
+  const filteredPolicies = scopedPolicies.filter(p => {
     if (!q) return true;
     return (
       p.carrier.toLowerCase().includes(q) ||
@@ -349,9 +348,9 @@ export default function PoliciesPage() {
 
   const systemStatus = getSystemStatus();
 
-  // Generate insights
+  // Generate insights (scoped)
   const insights: string[] = [];
-  if (activePolicies.length > 0) {
+  if (scopedPolicies.length > 0) {
     if (daysToNextRenewal !== null && daysToNextRenewal > 0) {
       insights.push(`Next renewal in ${daysToNextRenewal} days.`);
     } else if (daysToNextRenewal !== null && daysToNextRenewal <= 0) {
@@ -363,7 +362,7 @@ export default function PoliciesPage() {
       insights.push(`You have ${count} active ${POLICY_TYPE_CONFIG[type]?.label.toLowerCase() || type} polic${count > 1 ? 'ies' : 'y'}.`);
     });
     if (annualSpend > 0) {
-      insights.push(`Annual premium: $${(annualSpend / 100).toLocaleString()}.`);
+      insights.push(`Annual premium: $${(annualSpend / 100).toLocaleString()}${scopeTab !== 'all' ? ' (all policies)' : ''}.`);
     }
   }
 
@@ -472,17 +471,17 @@ export default function PoliciesPage() {
               backgroundColor: '#fff',
               border: `1px solid ${urgentAlerts.length > 0 ? '#fecaca' : '#e5e7eb'}`,
               borderRadius: 'var(--radius-lg)',
-              borderLeft: `4px solid ${urgentAlerts.length > 0 ? '#dc2626' : coverageGaps.filter(g => g.severity !== 'info').length > 0 ? '#f59e0b' : '#22c55e'}`,
+              borderLeft: `4px solid ${urgentAlerts.length > 0 ? '#dc2626' : coverageGaps.filter(g => g.severity !== 'info' && !g.policy_id).length > 0 ? '#f59e0b' : '#22c55e'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <div style={{
                   width: 10, height: 10, borderRadius: '50%',
-                  backgroundColor: urgentAlerts.length > 0 ? '#dc2626' : coverageGaps.filter(g => g.severity !== 'info').length > 0 ? '#f59e0b' : '#22c55e',
+                  backgroundColor: urgentAlerts.length > 0 ? '#dc2626' : coverageGaps.filter(g => g.severity !== 'info' && !g.policy_id).length > 0 ? '#f59e0b' : '#22c55e',
                 }} />
                 <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)' }}>
                   {urgentAlerts.length > 0
                     ? `${urgentAlerts.length} item${urgentAlerts.length > 1 ? 's' : ''} need${urgentAlerts.length === 1 ? 's' : ''} attention`
-                    : activePolicies.length === 0
+                    : scopedPolicies.length === 0
                     ? 'Get started by adding your first policy'
                     : 'No immediate risks detected'}
                 </span>
@@ -494,9 +493,9 @@ export default function PoliciesPage() {
                 {daysToNextRenewal !== null && daysToNextRenewal <= 0 && (
                   <div style={{ color: '#dc2626', fontWeight: 500 }}>A policy renewal is overdue</div>
                 )}
-                {coverageGaps.filter(g => g.severity !== 'info').length > 0 ? (
-                  <div>Potential gaps: {coverageGaps.filter(g => g.severity !== 'info').length} detected</div>
-                ) : activePolicies.length > 0 ? (
+                {coverageGaps.filter(g => g.severity !== 'info' && !g.policy_id).length > 0 ? (
+                  <div>Potential gaps: {coverageGaps.filter(g => g.severity !== 'info' && !g.policy_id).length} detected</div>
+                ) : scopedPolicies.length > 0 ? (
                   <div>Potential gaps: None detected</div>
                 ) : null}
                 {annualSpend > 0 && (
@@ -506,6 +505,26 @@ export default function PoliciesPage() {
             </div>
           )}
         </section>
+
+        {/* Scope Tabs */}
+        {!loading && hasMultipleScopes && (
+          <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--color-border)', width: 'fit-content' }}>
+            {(['all', 'personal', 'business'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setScopeTab(tab)}
+                style={{
+                  padding: '8px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer', border: 'none',
+                  backgroundColor: scopeTab === tab ? 'var(--color-primary)' : '#fff',
+                  color: scopeTab === tab ? '#fff' : 'var(--color-text-secondary)',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        )}
 
         {error && <div className="alert alert-error" style={{ marginBottom: 24 }}>{error}</div>}
 
@@ -714,32 +733,9 @@ export default function PoliciesPage() {
         <section>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-              Your Coverage {activePolicies.length > 0 && `(${activePolicies.length})`}
+              Your Coverage {scopedPolicies.length > 0 && `(${scopedPolicies.length})`}
             </h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {exposures.length > 0 && (
-                <button
-                  onClick={() => setGroupByExposure(!groupByExposure)}
-                  style={{
-                    padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                    backgroundColor: groupByExposure ? 'var(--color-primary)' : '#fff',
-                    color: groupByExposure ? '#fff' : 'var(--color-text-secondary)',
-                  }}
-                >
-                  Group by Asset
-                </button>
-              )}
-              <button
-                onClick={() => setShowExposureModal(true)}
-                style={{
-                  padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer',
-                  border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                  backgroundColor: '#fff', color: 'var(--color-text-secondary)',
-                }}
-              >
-                Manage Assets
-              </button>
               {activePolicies.length > 3 && (
                 <input
                   className="form-input"
@@ -761,54 +757,10 @@ export default function PoliciesPage() {
                 {search ? 'No policies match your search.' : 'No policies yet. Add your first policy to get started.'}
               </p>
             </div>
-          ) : groupByExposure ? (
-            /* ── EXPOSURE-GROUPED VIEW ── */
-            <>
-              {exposures.map(exp => {
-                const expPolicies = filteredPolicies.filter(p => p.exposure_id === exp.id);
-                if (expPolicies.length === 0) return null;
-                return (
-                  <div key={exp.id} style={{ marginBottom: 28 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)' }}>{exp.name}</span>
-                      {exp.exposure_type && (
-                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: '#f3f4f6', color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>
-                          {exp.exposure_type.replace('_', ' ')}
-                        </span>
-                      )}
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                        {expPolicies.length} {expPolicies.length === 1 ? 'policy' : 'policies'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {expPolicies.map(p => renderPolicyRow(p))}
-                    </div>
-                  </div>
-                );
-              })}
-              {/* Ungrouped policies */}
-              {(() => {
-                const ungrouped = filteredPolicies.filter(p => !p.exposure_id);
-                if (ungrouped.length === 0) return null;
-                return (
-                  <div style={{ marginBottom: 28 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-muted)' }}>Ungrouped</span>
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                        {ungrouped.length} {ungrouped.length === 1 ? 'policy' : 'policies'}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                      {ungrouped.map(p => renderPolicyRow(p))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </>
           ) : (
             <>
               {/* ── PERSONAL SECTION ── */}
-              {personalPolicies.length > 0 && (
+              {personalPolicies.length > 0 && scopeTab !== 'business' && (
                 <div style={{ marginBottom: businessPolicies.length > 0 ? 32 : 0 }}>
                   <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>
                     Personal ({personalPolicies.length})
@@ -830,12 +782,12 @@ export default function PoliciesPage() {
               )}
 
               {/* ── Divider ── */}
-              {personalPolicies.length > 0 && businessPolicies.length > 0 && (
+              {personalPolicies.length > 0 && businessPolicies.length > 0 && scopeTab === 'all' && (
                 <div style={{ borderTop: '1px solid var(--color-border)', marginBottom: 24 }} />
               )}
 
               {/* ── BUSINESS SECTION ── */}
-              {businessPolicies.length > 0 && (
+              {businessPolicies.length > 0 && scopeTab !== 'personal' && (
                 <div>
                   <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>
                     Business ({businessPolicies.length})
@@ -1233,101 +1185,6 @@ export default function PoliciesPage() {
       {/* ═══════════════════════════════════════════════════════════════
           DRAFT REVIEW MODAL
       ═══════════════════════════════════════════════════════════════ */}
-      {/* ═══════════════════════════════════════════════════════════════
-          MANAGE ASSETS MODAL
-      ═══════════════════════════════════════════════════════════════ */}
-      {showExposureModal && (
-        <div style={{
-          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
-        }}>
-          <div style={{
-            backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 32, maxWidth: 500, width: '100%', maxHeight: '90vh', overflow: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Manage Assets</h2>
-              <button onClick={() => setShowExposureModal(false)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
-            </div>
-
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 20 }}>
-              Assets represent things you insure — your home, car, business, etc. Link policies to assets to see all coverage for each.
-            </p>
-
-            {/* Existing exposures */}
-            {exposures.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                {exposures.map(exp => (
-                  <div key={exp.id} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{exp.name}</div>
-                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                        {exp.exposure_type ? exp.exposure_type.replace('_', ' ') : 'No type'} &middot; {exp.policy_count || 0} policies
-                      </div>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        try {
-                          await exposuresApi.remove(exp.id);
-                          setExposures(prev => prev.filter(e => e.id !== exp.id));
-                          toast('Asset removed', 'success');
-                        } catch (err: any) { setError(err.message); }
-                      }}
-                      style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #fecaca', borderRadius: 'var(--radius-md)', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Create new exposure */}
-            <div style={{ borderTop: exposures.length > 0 ? '1px solid var(--color-border)' : 'none', paddingTop: exposures.length > 0 ? 20 : 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 12 }}>Add New Asset</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input
-                  value={newExposure.name}
-                  onChange={e => setNewExposure(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Asset name (e.g. My Home, 2024 Tesla)"
-                  className="form-input"
-                  style={{ padding: '10px 14px', fontSize: 14 }}
-                />
-                <select
-                  value={newExposure.exposure_type || ''}
-                  onChange={e => setNewExposure(prev => ({ ...prev, exposure_type: e.target.value || null }))}
-                  className="form-input"
-                  style={{ padding: '10px 14px', fontSize: 14 }}
-                >
-                  <option value="">Select type...</option>
-                  <option value="dwelling">Dwelling / Property</option>
-                  <option value="vehicle">Vehicle</option>
-                  <option value="business_entity">Business Entity</option>
-                  <option value="personal">Personal / Family</option>
-                  <option value="other">Other</option>
-                </select>
-                <button
-                  disabled={!newExposure.name.trim()}
-                  onClick={async () => {
-                    try {
-                      const created = await exposuresApi.create(newExposure);
-                      setExposures(prev => [...prev, created]);
-                      setNewExposure({ name: '', exposure_type: '', description: '' });
-                      toast('Asset created', 'success');
-                    } catch (err: any) { setError(err.message); }
-                  }}
-                  className="btn btn-accent"
-                  style={{ padding: '12px 24px', fontSize: 14, fontWeight: 600 }}
-                >
-                  Add Asset
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {showDraftModal && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
