@@ -37,6 +37,8 @@ class PolicyBase(BaseModel):
     deductible: Optional[int] = None
     premium_amount: Optional[int] = None
     renewal_date: Optional[date] = None
+    exposure_id: Optional[int] = None
+    status: Optional[str] = "active"  # active, expired, archived
     # Deductible tracking
     deductible_type: Optional[str] = None  # annual, per_incident
     deductible_period_start: Optional[date] = None
@@ -58,6 +60,8 @@ class PolicyUpdate(BaseModel):
     deductible: Optional[int] = None
     premium_amount: Optional[int] = None
     renewal_date: Optional[date] = None
+    exposure_id: Optional[int] = None
+    status: Optional[str] = None
     # Deductible tracking
     deductible_type: Optional[str] = None
     deductible_period_start: Optional[date] = None
@@ -284,6 +288,32 @@ class ShareOut(BaseModel):
     role_label: Optional[str] = None
     expires_at: Optional[date] = None
     accepted: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── Exposures ───────────────────────────────────────
+
+class ExposureCreate(BaseModel):
+    name: str
+    exposure_type: Optional[str] = None  # dwelling, vehicle, business_entity, personal, other
+    description: Optional[str] = None
+
+
+class ExposureUpdate(BaseModel):
+    name: Optional[str] = None
+    exposure_type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ExposureOut(BaseModel):
+    id: int
+    user_id: int
+    name: str
+    exposure_type: Optional[str] = None
+    description: Optional[str] = None
     created_at: datetime
 
     class Config:

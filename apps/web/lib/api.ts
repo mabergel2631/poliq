@@ -59,6 +59,9 @@ export type Policy = {
   deductible?: number | null;
   premium_amount?: number | null;
   renewal_date?: string | null;
+  exposure_id?: number | null;
+  exposure_name?: string | null;
+  status?: string;
   created_at: string;
   key_contacts?: Record<string, KeyContact>;
   key_details?: Record<string, string>;
@@ -80,6 +83,8 @@ export type PolicyCreate = {
   deductible?: number | null;
   premium_amount?: number | null;
   renewal_date?: string | null;
+  exposure_id?: number | null;
+  status?: string;
   // Deductible tracking
   deductible_type?: string | null;
   deductible_period_start?: string | null;
@@ -937,6 +942,68 @@ export const inboundApi = {
   },
 };
 
+// ── Exposures API ───────────────────────────────────────
+
+export type Exposure = {
+  id: number;
+  user_id: number;
+  name: string;
+  exposure_type?: string | null;
+  description?: string | null;
+  created_at: string;
+  policy_count?: number;
+  total_coverage?: number;
+};
+
+export type ExposureCreate = {
+  name: string;
+  exposure_type?: string | null;
+  description?: string | null;
+};
+
+export type ExposureDetail = Exposure & {
+  policies: {
+    id: number;
+    carrier: string;
+    policy_type: string;
+    policy_number: string;
+    nickname?: string | null;
+    coverage_amount?: number | null;
+    deductible?: number | null;
+    premium_amount?: number | null;
+    status?: string;
+    renewal_date?: string | null;
+  }[];
+  gaps: CoverageGap[];
+  summary: CoverageSummary;
+};
+
+export const exposuresApi = {
+  list(): Promise<Exposure[]> {
+    return request<Exposure[]>("/exposures");
+  },
+  get(id: number): Promise<ExposureDetail> {
+    return request<ExposureDetail>(`/exposures/${id}`);
+  },
+  create(payload: ExposureCreate): Promise<Exposure> {
+    return request<Exposure>("/exposures", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  update(id: number, payload: Partial<ExposureCreate>): Promise<Exposure> {
+    return request<Exposure>(`/exposures/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  },
+  remove(id: number): Promise<{ ok: boolean }> {
+    return request<{ ok: boolean }>(`/exposures/${id}`, { method: "DELETE" });
+  },
+};
+
 // ── Agent / Advisor API ─────────────────────────────────────
 
 export type AgentClient = {
@@ -964,6 +1031,9 @@ export type AgentClientPolicy = {
   deductible?: number | null;
   premium_amount?: number | null;
   renewal_date?: string | null;
+  exposure_id?: number | null;
+  exposure_name?: string | null;
+  status?: string;
 };
 
 export type AgentClientSummary = {

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.db import engine, Base
-from app.models import User, Policy, Contact, CoverageItem, PolicyDetail, PasswordReset  # noqa: F401 — register models
+from app.models import User, Policy, Contact, CoverageItem, PolicyDetail, PasswordReset, Exposure  # noqa: F401 — register models
 from app.models_documents import Document  # noqa: F401
 from app.models_features import Premium, Claim, RenewalReminder, AuditLog, PolicyShare, EmergencyCard, PremiumHistory, PolicyDelta, DeltaExplanation, CoverageScore, InboundAddress, InboundEmail, PolicyDraft  # noqa: F401
 
@@ -33,6 +33,7 @@ from app.routes_deltas import router as deltas_router
 from app.routes_scores import router as scores_router
 from app.routes_inbound import router as inbound_router
 from app.routes_agent import router as agent_router
+from app.routes_exposures import router as exposures_router
 
 app = FastAPI(title="Covrabl API")
 
@@ -83,6 +84,10 @@ def on_startup():
                 conn.execute(text("ALTER TABLE policies ADD COLUMN premium_amount INTEGER"))
             if "business_name" not in cols:
                 conn.execute(text("ALTER TABLE policies ADD COLUMN business_name VARCHAR(200)"))
+            if "exposure_id" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN exposure_id INTEGER"))
+            if "status" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN status VARCHAR(20) DEFAULT 'active'"))
     if "users" in insp.get_table_names():
         user_cols = [c["name"] for c in insp.get_columns("users")]
         with engine.begin() as conn:
@@ -119,3 +124,4 @@ app.include_router(deltas_router)
 app.include_router(scores_router)
 app.include_router(inbound_router)
 app.include_router(agent_router)
+app.include_router(exposures_router)

@@ -104,44 +104,97 @@ export default function ClientDetailPage() {
         </div>
       </div>
 
-      {/* Policies */}
+      {/* Policies grouped by exposure */}
       <h2 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Policies</h2>
       {data.policies.length === 0 ? (
         <div className="card" style={{ padding: 24, color: 'var(--color-text-muted)', textAlign: 'center' }}>No policies</div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
-          {data.policies.map(p => (
-            <div key={p.id} className="card" style={{
-              padding: '14px 20px',
-              display: 'grid',
-              gridTemplateColumns: '1fr auto auto auto',
-              alignItems: 'center',
-              gap: 20,
-            }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
+      ) : (() => {
+        // Group policies by exposure_id
+        const groups: Record<string, typeof data.policies> = {};
+        data.policies.forEach(p => {
+          const key = p.exposure_id ? String(p.exposure_id) : '__none';
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(p);
+        });
+        // Derive exposure names from policies
+        const exposureNames: Record<string, string> = {};
+        Object.keys(groups).forEach(key => {
+          if (key === '__none') return;
+          const first = groups[key].find(p => p.exposure_name);
+          exposureNames[key] = first?.exposure_name || `Asset #${key}`;
+        });
+        const groupKeys = Object.keys(groups).filter(k => k !== '__none');
+        const ungrouped = groups['__none'] || [];
+        const hasGroups = groupKeys.length > 0;
+
+        const renderPolicy = (p: typeof data.policies[0]) => (
+          <div key={p.id} className="card" style={{
+            padding: '14px 20px',
+            display: 'grid',
+            gridTemplateColumns: '1fr auto auto auto',
+            alignItems: 'center',
+            gap: 20,
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
                   {p.carrier}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  {p.policy_type} &middot; {p.policy_number}
-                </div>
+                </span>
+                {p.status && p.status !== 'active' && (
+                  <span style={{
+                    padding: '1px 8px', borderRadius: 10, fontSize: 11, fontWeight: 600,
+                    backgroundColor: p.status === 'expired' ? '#fef2f2' : '#f3f4f6',
+                    color: p.status === 'expired' ? '#dc2626' : '#6b7280',
+                  }}>
+                    {p.status.charAt(0).toUpperCase() + p.status.slice(1)}
+                  </span>
+                )}
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Coverage</div>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{formatCurrency(p.coverage_amount)}</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Deductible</div>
-                <div style={{ fontSize: 13 }}>{formatCurrency(p.deductible)}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Renewal</div>
-                <div style={{ fontSize: 13 }}>{p.renewal_date || '--'}</div>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                {p.policy_type} &middot; {p.policy_number}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Coverage</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{formatCurrency(p.coverage_amount)}</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Deductible</div>
+              <div style={{ fontSize: 13 }}>{formatCurrency(p.deductible)}</div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>Renewal</div>
+              <div style={{ fontSize: 13 }}>{p.renewal_date || '--'}</div>
+            </div>
+          </div>
+        );
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
+            {hasGroups && groupKeys.map(key => (
+              <div key={key}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-primary)', marginBottom: 6, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#ede9fe', color: '#6d28d9' }}>
+                    {exposureNames[key]}
+                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{groups[key].length} {groups[key].length === 1 ? 'policy' : 'policies'}</span>
+                </div>
+                {groups[key].map(renderPolicy)}
+              </div>
+            ))}
+            {ungrouped.length > 0 && (
+              <div>
+                {hasGroups && (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6, marginTop: 8 }}>
+                    Ungrouped
+                  </div>
+                )}
+                {ungrouped.map(renderPolicy)}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Coverage Gaps */}
       {data.gaps.length > 0 && (

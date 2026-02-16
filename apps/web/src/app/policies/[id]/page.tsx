@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../lib/auth';
-import { policiesApi, contactsApi, documentsApi, coverageApi, policyDetailsApi, premiumsApi, claimsApi, sharingApi, exportApi, premiumHistoryApi, Policy, Contact, DocMeta, ContactCreate, ExtractionData, CoverageItem, CoverageItemCreate, PolicyDetail, PolicyDetailCreate, PolicyUpdate, Premium, PremiumCreate, Claim, ClaimCreate, PolicyShareType, ShareCreate, PremiumHistoryEntry } from '../../../../lib/api';
+import { policiesApi, contactsApi, documentsApi, coverageApi, policyDetailsApi, premiumsApi, claimsApi, sharingApi, exportApi, premiumHistoryApi, exposuresApi, Policy, Contact, DocMeta, ContactCreate, ExtractionData, CoverageItem, CoverageItemCreate, PolicyDetail, PolicyDetailCreate, PolicyUpdate, Premium, PremiumCreate, Claim, ClaimCreate, PolicyShareType, ShareCreate, PremiumHistoryEntry, Exposure } from '../../../../lib/api';
 import { useToast } from '../../components/Toast';
 import { Skeleton } from '../../components/Skeleton';
 
@@ -90,6 +90,9 @@ export default function PolicyDetailPage() {
   const [showAddPremiumHistory, setShowAddPremiumHistory] = useState(false);
   const [premiumHistoryForm, setPremiumHistoryForm] = useState({ amount: 0, effective_date: '' });
 
+  // Exposures
+  const [exposures, setExposures] = useState<Exposure[]>([]);
+
   // Claims quick-start
   const [copiedPolicyNumber, setCopiedPolicyNumber] = useState(false);
 
@@ -123,7 +126,7 @@ export default function PolicyDetailPage() {
 
   const loadAll = async () => {
     try {
-      const [p, c, d, cv, det, prem, cl, sh, ph] = await Promise.all([
+      const [p, c, d, cv, det, prem, cl, sh, ph, exp] = await Promise.all([
         policiesApi.get(policyId),
         contactsApi.list(policyId),
         documentsApi.list(policyId),
@@ -133,6 +136,7 @@ export default function PolicyDetailPage() {
         claimsApi.list(policyId),
         sharingApi.listShares(policyId).catch(() => [] as PolicyShareType[]),
         premiumHistoryApi.list(policyId).catch(() => ({ history: [], total_change_pct: 0, entry_count: 0 })),
+        exposuresApi.list().catch(() => [] as Exposure[]),
       ]);
       setPolicy(p);
       setContacts(c);
@@ -144,6 +148,7 @@ export default function PolicyDetailPage() {
       setShares(sh);
       setPremiumHistory(ph.history);
       setPremiumHistoryChange(ph.total_change_pct);
+      setExposures(exp);
     } catch (err: any) {
       if (err.status === 401) { logout(); router.replace('/login'); return; }
       setError(err.message);
@@ -163,6 +168,8 @@ export default function PolicyDetailPage() {
       deductible: policy.deductible,
       premium_amount: policy.premium_amount,
       renewal_date: policy.renewal_date,
+      exposure_id: policy.exposure_id,
+      status: policy.status || 'active',
     });
     setEditing(true);
   };
@@ -505,6 +512,24 @@ export default function PolicyDetailPage() {
                 {policy.nickname && <p style={{ margin: '0 0 4px', color: 'var(--color-text-secondary)', fontSize: 15 }}>{policy.carrier} - {policy.policy_type}</p>}
                 <p style={{ margin: '0 0 8px', color: 'var(--color-text-muted)', fontSize: 14 }}>Policy # <span style={{ fontFamily: 'monospace' }}>{policy.policy_number}</span></p>
 
+                {/* Asset + Status tags */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  {policy.exposure_name && (
+                    <span style={{ padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600, backgroundColor: '#ede9fe', color: '#6d28d9' }}>
+                      {policy.exposure_name}
+                    </span>
+                  )}
+                  {policy.status && policy.status !== 'active' && (
+                    <span style={{
+                      padding: '2px 10px', borderRadius: 12, fontSize: 12, fontWeight: 600,
+                      backgroundColor: policy.status === 'expired' ? '#fef2f2' : '#f3f4f6',
+                      color: policy.status === 'expired' ? '#dc2626' : '#6b7280',
+                    }}>
+                      {policy.status.charAt(0).toUpperCase() + policy.status.slice(1)}
+                    </span>
+                  )}
+                </div>
+
                 {/* Sharing Status - Always Visible */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
@@ -676,6 +701,21 @@ export default function PolicyDetailPage() {
               <div>
                 <label style={labelStyle}>Renewal Date</label>
                 <input type="date" value={editForm.renewal_date ?? ''} onChange={e => setEditForm({ ...editForm, renewal_date: e.target.value || null })} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Asset</label>
+                <select value={editForm.exposure_id ?? ''} onChange={e => setEditForm({ ...editForm, exposure_id: e.target.value ? Number(e.target.value) : null })} style={inputStyle}>
+                  <option value="">None</option>
+                  {exposures.map(exp => <option key={exp.id} value={exp.id}>{exp.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Status</label>
+                <select value={editForm.status ?? 'active'} onChange={e => setEditForm({ ...editForm, status: e.target.value })} style={inputStyle}>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="archived">Archived</option>
+                </select>
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from .auth import get_current_user
 from .coverage_taxonomy import analyze_coverage_gaps, get_coverage_summary
 from .db import get_db
-from .models import User, Policy, Contact, PolicyDetail
+from .models import User, Policy, Contact, PolicyDetail, Exposure
 from .models_features import PolicyShare, CoverageScore
 
 router = APIRouter(prefix="/agent", tags=["agent"])
@@ -33,6 +33,8 @@ def _policy_to_dict(p: Policy, contacts: list | None = None, details: list | Non
         "premium_amount": p.premium_amount,
         "renewal_date": str(p.renewal_date) if p.renewal_date else None,
         "created_at": str(p.created_at) if p.created_at else None,
+        "exposure_id": p.exposure_id,
+        "status": p.status or "active",
     }
     if contacts is not None:
         d["contacts"] = [{"role": c.role, "name": c.name, "phone": c.phone, "email": c.email} for c in contacts]
@@ -165,6 +167,11 @@ def client_summary(client_id: int, agent: User = Depends(require_agent), db: Ses
         details = db.execute(select(PolicyDetail).where(PolicyDetail.policy_id == p.id)).scalars().all()
         d = _policy_to_dict(p, contacts, details)
         policy_dicts.append(d)
+        exposure_name = None
+        if p.exposure_id:
+            exp = db.get(Exposure, p.exposure_id)
+            if exp:
+                exposure_name = exp.name
         policy_list.append({
             "id": p.id,
             "carrier": p.carrier,
@@ -175,6 +182,9 @@ def client_summary(client_id: int, agent: User = Depends(require_agent), db: Ses
             "deductible": p.deductible,
             "premium_amount": p.premium_amount,
             "renewal_date": str(p.renewal_date) if p.renewal_date else None,
+            "exposure_id": p.exposure_id,
+            "exposure_name": exposure_name,
+            "status": p.status or "active",
         })
 
     # Coverage score

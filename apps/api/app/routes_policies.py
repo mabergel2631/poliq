@@ -5,7 +5,7 @@ from typing import List
 
 from .auth import get_current_user
 from .db import get_db
-from .models import Policy, Contact, CoverageItem, PolicyDetail, User
+from .models import Policy, Contact, CoverageItem, PolicyDetail, User, Exposure
 from .models_features import Premium, PolicyShare
 from .schemas import PolicyCreate, PolicyUpdate, PolicyOut
 from .audit_helper import log_action
@@ -48,6 +48,13 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
         ).scalars().all()
         shared_with = [s.shared_with_email for s in shares]
 
+        # Resolve exposure name
+        exposure_name = None
+        if p.exposure_id:
+            exp = db.get(Exposure, p.exposure_id)
+            if exp:
+                exposure_name = exp.name
+
         result.append({
             "id": p.id,
             "user_id": p.user_id,
@@ -65,6 +72,9 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
             "key_contacts": key_contacts,
             "key_details": key_details,
             "shared_with": shared_with,
+            "exposure_id": p.exposure_id,
+            "exposure_name": exposure_name,
+            "status": p.status or "active",
             # Deductible tracking
             "deductible_type": p.deductible_type,
             "deductible_period_start": str(p.deductible_period_start) if p.deductible_period_start else None,

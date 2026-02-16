@@ -13,11 +13,24 @@ class User(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
 
 
+class Exposure(Base):
+    __tablename__ = "exposures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    exposure_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # dwelling, vehicle, business_entity, personal, other
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
+
+
 class Policy(Base):
     __tablename__ = "policies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True)
+    exposure_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("exposures.id", ondelete="SET NULL"), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="active")  # active, expired, archived
 
     scope: Mapped[str] = mapped_column(String(20), index=True)
     policy_type: Mapped[str] = mapped_column(String(50), index=True)

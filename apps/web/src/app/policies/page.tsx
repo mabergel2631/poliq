@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/auth';
-import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, scoresApi, inboundApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, CoverageScoresResult, InboundAddress, PolicyDraftData } from '../../../lib/api';
+import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, scoresApi, inboundApi, exposuresApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, CoverageScoresResult, InboundAddress, PolicyDraftData, Exposure, ExposureCreate } from '../../../lib/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { APP_NAME } from '../config';
@@ -35,6 +35,10 @@ export default function PoliciesPage() {
   const [inboundAddress, setInboundAddress] = useState<InboundAddress | null>(null);
   const [pendingDrafts, setPendingDrafts] = useState<PolicyDraftData[]>([]);
   const [showDraftModal, setShowDraftModal] = useState<PolicyDraftData | null>(null);
+  const [exposures, setExposures] = useState<Exposure[]>([]);
+  const [groupByExposure, setGroupByExposure] = useState(false);
+  const [showExposureModal, setShowExposureModal] = useState(false);
+  const [newExposure, setNewExposure] = useState<ExposureCreate>({ name: '', exposure_type: '', description: '' });
   const [showEmailSettings, setShowEmailSettings] = useState(false);
   const [creatingAddress, setCreatingAddress] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -63,7 +67,7 @@ export default function PoliciesPage() {
   const loadAll = async () => {
     try {
       setLoading(true);
-      const [pols, rens, spend, shared, pending, alerts, gapsResult, scoresResult, addressResult, draftsResult] = await Promise.all([
+      const [pols, rens, spend, shared, pending, alerts, gapsResult, scoresResult, addressResult, draftsResult, exps] = await Promise.all([
         policiesApi.list(),
         renewalsApi.upcoming(90),
         premiumsApi.annualSpend(),
@@ -74,6 +78,7 @@ export default function PoliciesPage() {
         scoresApi.get().catch(() => null),
         inboundApi.getAddress().catch(() => ({ address: null })),
         inboundApi.listDrafts('pending').catch(() => ({ items: [], total: 0 })),
+        exposuresApi.list().catch(() => []),
       ]);
       setPolicies(Array.isArray(pols) ? pols : []);
       setRenewals(Array.isArray(rens) ? rens : []);
@@ -86,6 +91,7 @@ export default function PoliciesPage() {
       setCoverageScores(scoresResult);
       setInboundAddress(addressResult?.address || null);
       setPendingDrafts(draftsResult?.items || []);
+      setExposures(Array.isArray(exps) ? exps : []);
     } catch (err: any) {
       if (err.status === 401 || err.status === 403) { logout(); router.replace('/login'); return; }
       setError(err.message);
@@ -370,6 +376,14 @@ export default function PoliciesPage() {
             <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', backgroundColor: policyStatus.bgColor, color: policyStatus.color, borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
               {policyStatus.status === 'alert' ? '⚠️' : policyStatus.status === 'warning' ? '💡' : '✓'} {policyStatus.label}
             </span>
+            {p.status && p.status !== 'active' && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600,
+                backgroundColor: p.status === 'expired' ? '#fee2e2' : '#f3f4f6',
+                color: p.status === 'expired' ? '#991b1b' : '#6b7280',
+              }}>
+                {p.status === 'expired' ? 'Expired' : 'Archived'}
+              </span>
+            )}
             {p.shared_with && p.shared_with.length > 0 && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', backgroundColor: '#e0f2fe', color: '#0369a1', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>
                 👥 Shared ({p.shared_with.length})
@@ -760,19 +774,44 @@ export default function PoliciesPage() {
             4️⃣ YOUR COVERAGE
         ═══════════════════════════════════════════════════════════════ */}
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
               Your Coverage {activePolicies.length > 0 && `(${activePolicies.length})`}
             </h2>
-            {activePolicies.length > 3 && (
-              <input
-                className="form-input"
-                placeholder="Search..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                style={{ width: 200, padding: '8px 12px', fontSize: 14 }}
-              />
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {exposures.length > 0 && (
+                <button
+                  onClick={() => setGroupByExposure(!groupByExposure)}
+                  style={{
+                    padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+                    backgroundColor: groupByExposure ? 'var(--color-primary)' : '#fff',
+                    color: groupByExposure ? '#fff' : 'var(--color-text-secondary)',
+                  }}
+                >
+                  Group by Asset
+                </button>
+              )}
+              <button
+                onClick={() => setShowExposureModal(true)}
+                style={{
+                  padding: '6px 14px', fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                  border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+                  backgroundColor: '#fff', color: 'var(--color-text-secondary)',
+                }}
+              >
+                Manage Assets
+              </button>
+              {activePolicies.length > 3 && (
+                <input
+                  className="form-input"
+                  placeholder="Search..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ width: 200, padding: '8px 12px', fontSize: 14 }}
+                />
+              )}
+            </div>
           </div>
 
           {loading ? (
@@ -784,6 +823,50 @@ export default function PoliciesPage() {
                 {search ? 'No policies match your search.' : 'No policies yet. Add your first policy to get started.'}
               </p>
             </div>
+          ) : groupByExposure ? (
+            /* ── EXPOSURE-GROUPED VIEW ── */
+            <>
+              {exposures.map(exp => {
+                const expPolicies = filteredPolicies.filter(p => p.exposure_id === exp.id);
+                if (expPolicies.length === 0) return null;
+                return (
+                  <div key={exp.id} style={{ marginBottom: 28 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text)' }}>{exp.name}</span>
+                      {exp.exposure_type && (
+                        <span style={{ padding: '2px 8px', borderRadius: 12, fontSize: 11, fontWeight: 500, backgroundColor: '#f3f4f6', color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>
+                          {exp.exposure_type.replace('_', ' ')}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                        {expPolicies.length} {expPolicies.length === 1 ? 'policy' : 'policies'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {expPolicies.map(p => renderPolicyRow(p))}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Ungrouped policies */}
+              {(() => {
+                const ungrouped = filteredPolicies.filter(p => !p.exposure_id);
+                if (ungrouped.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 28 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-muted)' }}>Ungrouped</span>
+                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                        {ungrouped.length} {ungrouped.length === 1 ? 'policy' : 'policies'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {ungrouped.map(p => renderPolicyRow(p))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
           ) : (
             <>
               {/* ── PERSONAL SECTION ── */}
@@ -1212,6 +1295,101 @@ export default function PoliciesPage() {
       {/* ═══════════════════════════════════════════════════════════════
           DRAFT REVIEW MODAL
       ═══════════════════════════════════════════════════════════════ */}
+      {/* ═══════════════════════════════════════════════════════════════
+          MANAGE ASSETS MODAL
+      ═══════════════════════════════════════════════════════════════ */}
+      {showExposureModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
+        }}>
+          <div style={{
+            backgroundColor: '#fff', borderRadius: 'var(--radius-lg)', padding: 32, maxWidth: 500, width: '100%', maxHeight: '90vh', overflow: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--color-text)' }}>Manage Assets</h2>
+              <button onClick={() => setShowExposureModal(false)} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: 'var(--color-text-muted)' }}>×</button>
+            </div>
+
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 20 }}>
+              Assets represent things you insure — your home, car, business, etc. Link policies to assets to see all coverage for each.
+            </p>
+
+            {/* Existing exposures */}
+            {exposures.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                {exposures.map(exp => (
+                  <div key={exp.id} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 16px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{exp.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                        {exp.exposure_type ? exp.exposure_type.replace('_', ' ') : 'No type'} &middot; {exp.policy_count || 0} policies
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await exposuresApi.remove(exp.id);
+                          setExposures(prev => prev.filter(e => e.id !== exp.id));
+                          toast('Asset removed', 'success');
+                        } catch (err: any) { setError(err.message); }
+                      }}
+                      style={{ padding: '4px 10px', fontSize: 12, border: '1px solid #fecaca', borderRadius: 'var(--radius-md)', background: '#fff', color: '#dc2626', cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Create new exposure */}
+            <div style={{ borderTop: exposures.length > 0 ? '1px solid var(--color-border)' : 'none', paddingTop: exposures.length > 0 ? 20 : 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 12 }}>Add New Asset</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input
+                  value={newExposure.name}
+                  onChange={e => setNewExposure(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Asset name (e.g. My Home, 2024 Tesla)"
+                  className="form-input"
+                  style={{ padding: '10px 14px', fontSize: 14 }}
+                />
+                <select
+                  value={newExposure.exposure_type || ''}
+                  onChange={e => setNewExposure(prev => ({ ...prev, exposure_type: e.target.value || null }))}
+                  className="form-input"
+                  style={{ padding: '10px 14px', fontSize: 14 }}
+                >
+                  <option value="">Select type...</option>
+                  <option value="dwelling">Dwelling / Property</option>
+                  <option value="vehicle">Vehicle</option>
+                  <option value="business_entity">Business Entity</option>
+                  <option value="personal">Personal / Family</option>
+                  <option value="other">Other</option>
+                </select>
+                <button
+                  disabled={!newExposure.name.trim()}
+                  onClick={async () => {
+                    try {
+                      const created = await exposuresApi.create(newExposure);
+                      setExposures(prev => [...prev, created]);
+                      setNewExposure({ name: '', exposure_type: '', description: '' });
+                      toast('Asset created', 'success');
+                    } catch (err: any) { setError(err.message); }
+                  }}
+                  className="btn btn-accent"
+                  style={{ padding: '12px 24px', fontSize: 14, fontWeight: 600 }}
+                >
+                  Add Asset
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDraftModal && (
         <div style={{
           position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24
