@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../../../../lib/auth';
-import { policiesApi, contactsApi, documentsApi, coverageApi, policyDetailsApi, premiumsApi, claimsApi, sharingApi, exportApi, premiumHistoryApi, exposuresApi, gapsApi, certificatesApi, Policy, Contact, DocMeta, ContactCreate, ExtractionData, CoverageItem, CoverageItemCreate, PolicyDetail, PolicyDetailCreate, PolicyUpdate, Premium, PremiumCreate, Claim, ClaimCreate, PolicyShareType, ShareCreate, PremiumHistoryEntry, Exposure, CoverageGap, Certificate } from '../../../../lib/api';
+import { policiesApi, contactsApi, documentsApi, coverageApi, policyDetailsApi, claimsApi, sharingApi, exportApi, premiumHistoryApi, exposuresApi, gapsApi, certificatesApi, Policy, Contact, DocMeta, ContactCreate, ExtractionData, CoverageItem, CoverageItemCreate, PolicyDetail, PolicyDetailCreate, PolicyUpdate, Claim, ClaimCreate, PolicyShareType, ShareCreate, PremiumHistoryEntry, Exposure, CoverageGap, Certificate } from '../../../../lib/api';
 import { useToast } from '../../components/Toast';
 import { Skeleton } from '../../components/Skeleton';
 
@@ -78,15 +78,12 @@ export default function PolicyDetailPage() {
   const [showDetailForm, setShowDetailForm] = useState(false);
   const [detailForm, setDetailForm] = useState<PolicyDetailCreate>({ field_name: '', field_value: '' });
 
-  // Premiums
-  const [premiums, setPremiums] = useState<Premium[]>([]);
-  const [showPremiumForm, setShowPremiumForm] = useState(false);
-  const [premiumForm, setPremiumForm] = useState<PremiumCreate>({ amount: 0, frequency: 'monthly', due_date: '' });
-
   // Claims
   const [claims, setClaims] = useState<Claim[]>([]);
   const [showClaimForm, setShowClaimForm] = useState(false);
   const [claimForm, setClaimForm] = useState<ClaimCreate>({ claim_number: '', status: 'open', date_filed: '', description: '' });
+  const [claimExtracting, setClaimExtracting] = useState(false);
+  const claimFileRef = useRef<HTMLInputElement>(null);
 
   // Sharing
   const [shares, setShares] = useState<PolicyShareType[]>([]);
@@ -146,13 +143,12 @@ export default function PolicyDetailPage() {
 
   const loadAll = async () => {
     try {
-      const [p, c, d, cv, det, prem, cl, sh, ph, exp, gapsResult, certs] = await Promise.all([
+      const [p, c, d, cv, det, cl, sh, ph, exp, gapsResult, certs] = await Promise.all([
         policiesApi.get(policyId),
         contactsApi.list(policyId),
         documentsApi.list(policyId),
         coverageApi.list(policyId),
         policyDetailsApi.list(policyId),
-        premiumsApi.list(policyId),
         claimsApi.list(policyId),
         sharingApi.listShares(policyId).catch(() => [] as PolicyShareType[]),
         premiumHistoryApi.list(policyId).catch(() => ({ history: [], total_change_pct: 0, entry_count: 0 })),
@@ -165,7 +161,6 @@ export default function PolicyDetailPage() {
       setDocs(d);
       setCoverageItems(cv);
       setDetails(det);
-      setPremiums(prem);
       setClaims(cl);
       setShares(sh);
       setPremiumHistory(ph.history);
@@ -1788,94 +1783,63 @@ export default function PolicyDetailPage() {
         )}
       </div>
 
-      {/* Premiums */}
-      <div className="card" style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 className="section-title" style={{ margin: 0 }}>Premiums</h2>
-          <button onClick={() => setShowPremiumForm(!showPremiumForm)} className="btn btn-primary">
-            {showPremiumForm ? 'Cancel' : '+ Add Premium'}
-          </button>
-        </div>
-
-        {showPremiumForm && (
-          <form onSubmit={async (e) => { e.preventDefault(); try { await premiumsApi.create(policyId, premiumForm); setShowPremiumForm(false); setPremiumForm({ amount: 0, frequency: 'monthly', due_date: '' }); setPremiums(await premiumsApi.list(policyId)); } catch (err: any) { setError(err.message); } }} style={{ padding: 16, marginBottom: 16, backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div>
-                <label style={labelStyle}>Amount ($)</label>
-                <input type="number" step="0.01" value={premiumForm.amount / 100 || ''} onChange={e => setPremiumForm({ ...premiumForm, amount: Math.round(Number(e.target.value) * 100) })} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Frequency</label>
-                <select value={premiumForm.frequency} onChange={e => setPremiumForm({ ...premiumForm, frequency: e.target.value })} style={inputStyle}>
-                  {['monthly', 'quarterly', 'semi_annual', 'annual'].map(f => <option key={f} value={f}>{f.replace('_', '-')}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={labelStyle}>Due Date</label>
-                <input type="date" value={premiumForm.due_date} onChange={e => setPremiumForm({ ...premiumForm, due_date: e.target.value })} required style={inputStyle} />
-              </div>
-              <div>
-                <label style={labelStyle}>Payment Method</label>
-                <input value={premiumForm.payment_method ?? ''} onChange={e => setPremiumForm({ ...premiumForm, payment_method: e.target.value || null })} placeholder="e.g. Credit Card" style={inputStyle} />
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={labelStyle}>Notes</label>
-                <input value={premiumForm.notes ?? ''} onChange={e => setPremiumForm({ ...premiumForm, notes: e.target.value || null })} style={inputStyle} />
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }}>Save Premium</button>
-          </form>
-        )}
-
-        {premiums.length === 0 ? (
-          <p style={{ color: '#999', margin: 0 }}>No premiums recorded yet.</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Amount</th>
-                <th>Frequency</th>
-                <th>Due Date</th>
-                <th>Paid</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {premiums.map(pr => (
-                <tr key={pr.id} style={{ borderBottom: '1px solid var(--color-border-light)' }}>
-                  <td style={{ padding: 8 }}>${(pr.amount / 100).toFixed(2)}</td>
-                  <td style={{ padding: 8 }}>{pr.frequency.replace('_', '-')}</td>
-                  <td style={{ padding: 8 }}>{pr.due_date}</td>
-                  <td style={{ padding: 8 }}>
-                    {pr.paid_date ? (
-                      <span style={{ color: '#059669', fontWeight: 600 }}>{pr.paid_date}</span>
-                    ) : (
-                      <button onClick={async () => { try { await premiumsApi.update(policyId, pr.id, { paid_date: new Date().toISOString().slice(0, 10) }); setPremiums(await premiumsApi.list(policyId)); } catch (err: any) { setError(err.message); } }} className="btn btn-accent" style={{ padding: '4px 10px', fontSize: 12 }}>
-                        Mark Paid
-                      </button>
-                    )}
-                  </td>
-                  <td style={{ padding: 8 }}>
-                    <button onClick={async () => { await premiumsApi.remove(policyId, pr.id); setPremiums(prev => prev.filter(x => x.id !== pr.id)); }} className="btn btn-danger">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
       {/* Claims */}
       <div className="card" style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 className="section-title" style={{ margin: 0 }}>Claims</h2>
-          <button onClick={() => setShowClaimForm(!showClaimForm)} className="btn btn-primary">
-            {showClaimForm ? 'Cancel' : '+ File Claim'}
-          </button>
+          <h2 className="section-title" style={{ margin: 0 }}>Track Claims</h2>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="file"
+              ref={claimFileRef}
+              accept=".pdf"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setClaimExtracting(true);
+                try {
+                  const result = await claimsApi.extractFromPdf(policyId, file);
+                  const ext = result.extraction;
+                  setClaimForm({
+                    claim_number: ext.claim_number || '',
+                    status: ext.status || 'open',
+                    date_filed: ext.date_filed || '',
+                    description: ext.description || '',
+                    date_resolved: ext.date_resolved || null,
+                    amount_claimed: ext.amount_claimed || null,
+                    amount_paid: ext.amount_paid || null,
+                    notes: ext.notes || null,
+                  });
+                  setShowClaimForm(true);
+                  toast('Claim data extracted — review and save', 'success');
+                } catch (err: any) {
+                  toast(err.message || 'Extraction failed', 'error');
+                } finally {
+                  setClaimExtracting(false);
+                  if (claimFileRef.current) claimFileRef.current.value = '';
+                }
+              }}
+            />
+            <button
+              onClick={() => claimFileRef.current?.click()}
+              className="btn btn-accent"
+              disabled={claimExtracting}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              {claimExtracting ? (
+                <><span className="spinner" style={{ width: 14, height: 14 }} /> Extracting...</>
+              ) : (
+                '+ Upload & Extract'
+              )}
+            </button>
+            <button onClick={() => { setShowClaimForm(!showClaimForm); if (showClaimForm) setClaimForm({ claim_number: '', status: 'open', date_filed: '', description: '' }); }} className="btn btn-primary">
+              {showClaimForm ? 'Cancel' : '+ Add Manually'}
+            </button>
+          </div>
         </div>
 
         {showClaimForm && (
-          <form onSubmit={async (e) => { e.preventDefault(); try { await claimsApi.create(policyId, claimForm); setShowClaimForm(false); setClaimForm({ claim_number: '', status: 'open', date_filed: '', description: '' }); setClaims(await claimsApi.list(policyId)); } catch (err: any) { setError(err.message); } }} style={{ padding: 16, marginBottom: 16, backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+          <form onSubmit={async (e) => { e.preventDefault(); try { await claimsApi.create(policyId, claimForm); setShowClaimForm(false); setClaimForm({ claim_number: '', status: 'open', date_filed: '', description: '' }); setClaims(await claimsApi.list(policyId)); toast('Claim saved', 'success'); } catch (err: any) { setError(err.message); } }} style={{ padding: 16, marginBottom: 16, backgroundColor: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Claim Number</label>
@@ -1890,14 +1854,26 @@ export default function PolicyDetailPage() {
                 <input type="number" step="0.01" value={claimForm.amount_claimed ? claimForm.amount_claimed / 100 : ''} onChange={e => setClaimForm({ ...claimForm, amount_claimed: e.target.value ? Math.round(Number(e.target.value) * 100) : null })} style={inputStyle} />
               </div>
               <div>
+                <label style={labelStyle}>Amount Paid ($)</label>
+                <input type="number" step="0.01" value={claimForm.amount_paid ? claimForm.amount_paid / 100 : ''} onChange={e => setClaimForm({ ...claimForm, amount_paid: e.target.value ? Math.round(Number(e.target.value) * 100) : null })} style={inputStyle} />
+              </div>
+              <div>
                 <label style={labelStyle}>Status</label>
                 <select value={claimForm.status} onChange={e => setClaimForm({ ...claimForm, status: e.target.value })} style={inputStyle}>
                   {['open', 'in_progress', 'closed', 'denied'].map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                 </select>
               </div>
+              <div>
+                <label style={labelStyle}>Date Resolved</label>
+                <input type="date" value={claimForm.date_resolved || ''} onChange={e => setClaimForm({ ...claimForm, date_resolved: e.target.value || null })} style={inputStyle} />
+              </div>
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={labelStyle}>Description</label>
                 <input value={claimForm.description} onChange={e => setClaimForm({ ...claimForm, description: e.target.value })} required style={inputStyle} />
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={labelStyle}>Notes</label>
+                <input value={claimForm.notes || ''} onChange={e => setClaimForm({ ...claimForm, notes: e.target.value || null })} placeholder="Adjuster info, denial reason, etc." style={inputStyle} />
               </div>
             </div>
             <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }}>Save Claim</button>
@@ -1905,7 +1881,7 @@ export default function PolicyDetailPage() {
         )}
 
         {claims.length === 0 ? (
-          <p style={{ color: '#999', margin: 0 }}>No claims filed yet.</p>
+          <p style={{ color: '#999', margin: 0 }}>No claims recorded yet. Upload a claim document or add one manually.</p>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
             {claims.map(cl => {
@@ -1928,9 +1904,11 @@ export default function PolicyDetailPage() {
                       Filed: {cl.date_filed}
                       {cl.amount_claimed != null && <span style={{ marginLeft: 12 }}>Claimed: ${(cl.amount_claimed / 100).toFixed(2)}</span>}
                       {cl.amount_paid != null && <span style={{ marginLeft: 12 }}>Paid: ${(cl.amount_paid / 100).toFixed(2)}</span>}
+                      {cl.date_resolved && <span style={{ marginLeft: 12 }}>Resolved: {cl.date_resolved}</span>}
                     </div>
+                    {cl.notes && <div style={{ fontSize: 12, color: '#888', marginTop: 2, fontStyle: 'italic' }}>{cl.notes}</div>}
                   </div>
-                  <button onClick={async () => { await claimsApi.remove(policyId, cl.id); setClaims(prev => prev.filter(x => x.id !== cl.id)); }} className="btn btn-danger">Delete</button>
+                  <button onClick={async () => { await claimsApi.remove(policyId, cl.id); setClaims(prev => prev.filter(x => x.id !== cl.id)); toast('Claim deleted', 'success'); }} className="btn btn-danger">Delete</button>
                 </div>
               );
             })}

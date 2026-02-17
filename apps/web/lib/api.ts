@@ -469,6 +469,17 @@ export type ClaimCreate = {
   notes?: string | null;
 };
 
+export type ClaimExtraction = {
+  claim_number: string;
+  status: string;
+  date_filed: string | null;
+  date_resolved: string | null;
+  amount_claimed: number | null;
+  amount_paid: number | null;
+  description: string;
+  notes: string | null;
+};
+
 export const claimsApi = {
   list(policyId: number): Promise<Claim[]> {
     return request<Claim[]>(`/policies/${policyId}/claims`);
@@ -489,6 +500,18 @@ export const claimsApi = {
   },
   remove(policyId: number, claimId: number): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/policies/${policyId}/claims/${claimId}`, { method: "DELETE" });
+  },
+  async extractFromPdf(policyId: number, file: File): Promise<{ ok: boolean; extraction: ClaimExtraction }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const url = `${API_BASE}/policies/${policyId}/claims/extract`;
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(url, { method: "POST", headers, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Extraction failed");
+    return data;
   },
 };
 

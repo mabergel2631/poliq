@@ -196,6 +196,31 @@ class AnthropicExtractor(BaseExtractor):
         )
         return _parse_coi_response(message.content[0].text)
 
+    def extract_claim(self, text: str) -> "ClaimExtractionResult":
+        import anthropic
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            system=CLAIM_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": f"Extract claim data from this insurance document:\n\n{text[:50000]}"}],
+        )
+        return _parse_claim_response(message.content[0].text)
+
+    def extract_claim_images(self, images: list[bytes]) -> "ClaimExtractionResult":
+        import anthropic, base64
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        content: list[dict] = [{"type": "text", "text": "Extract claim data from this insurance document (scanned pages):"}]
+        for img in images[:20]:
+            content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": base64.b64encode(img).decode()}})
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            system=CLAIM_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": content}],
+        )
+        return _parse_claim_response(message.content[0].text)
+
 
 class OpenAIExtractor(BaseExtractor):
     def extract(self, text: str) -> ExtractionResult:
@@ -257,6 +282,35 @@ class OpenAIExtractor(BaseExtractor):
             ],
         )
         return _parse_coi_response(response.choices[0].message.content or "")
+
+    def extract_claim(self, text: str) -> "ClaimExtractionResult":
+        import openai
+        client = openai.OpenAI(api_key=settings.openai_api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=2048,
+            messages=[
+                {"role": "system", "content": CLAIM_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Extract claim data from this insurance document:\n\n{text[:50000]}"},
+            ],
+        )
+        return _parse_claim_response(response.choices[0].message.content or "")
+
+    def extract_claim_images(self, images: list[bytes]) -> "ClaimExtractionResult":
+        import openai, base64
+        client = openai.OpenAI(api_key=settings.openai_api_key)
+        content: list[dict] = [{"type": "text", "text": "Extract claim data from this insurance document (scanned pages):"}]
+        for img in images[:20]:
+            content.append({"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64.b64encode(img).decode()}"}})
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=2048,
+            messages=[
+                {"role": "system", "content": CLAIM_SYSTEM_PROMPT},
+                {"role": "user", "content": content},
+            ],
+        )
+        return _parse_claim_response(response.choices[0].message.content or "")
 
 
 def get_extractor() -> BaseExtractor:
@@ -432,6 +486,81 @@ class COIExtractionResult:
     producer_phone: Optional[str] = None
     producer_email: Optional[str] = None
     raw_response: str = ""
+
+
+# ── Claim Document Extraction ──────────────────────────
+
+CLAIM_SYSTEM_PROMPT = """You are an expert insurance claim document parser. Your job is to extract claim details from insurance claim documents, Explanation of Benefits (EOB) forms, claim acknowledgment letters, settlement letters, and similar documents.
+
+Return ONLY valid JSON with this exact schema (use null for missing fields):
+{
+  "claim_number": "string or null - the claim number, reference number, or case ID",
+  "status": "string or null - one of: open, in_progress, closed, denied. Infer from document context (e.g. settlement letter = closed, denial letter = denied, acknowledgment = open or in_progress)",
+  "date_filed": "string or null - YYYY-MM-DD format, the date the claim was filed or reported",
+  "date_resolved": "string or null - YYYY-MM-DD format, the date the claim was settled, closed, or denied",
+  "amount_claimed": "integer or null - the amount claimed in CENTS (e.g. 150000 for $1,500.00)",
+  "amount_paid": "integer or null - the amount paid/settled in CENTS (e.g. 120000 for $1,200.00)",
+  "description": "string or null - brief description of what the claim is for (e.g. 'Water damage to basement from pipe burst', 'Rear-end collision on Highway 101')",
+  "notes": "string or null - any additional relevant details like adjuster name, repair shop, provider name, denial reason, deductible applied, etc."
+}
+
+CRITICAL INSTRUCTIONS:
+1. CLAIM NUMBER: Look for claim #, reference #, case #, file #, or similar identifiers
+2. AMOUNTS: Convert dollar amounts to cents (multiply by 100). $1,500.00 = 150000
+3. STATUS: Infer from context — payment/settlement = closed, denial = denied, under review = in_progress, new filing = open
+4. DATES: Use YYYY-MM-DD format. Look for date of loss, date filed, date of service, settlement date
+5. DESCRIPTION: Summarize the nature of the claim concisely
+6. NOTES: Include adjuster info, denial reasons, deductible amounts, provider/shop names, or any other useful context
+
+Return ONLY the JSON object, no markdown fences or explanation."""
+
+
+@dataclass
+class ClaimExtractionResult:
+    claim_number: Optional[str] = None
+    status: Optional[str] = None
+    date_filed: Optional[str] = None
+    date_resolved: Optional[str] = None
+    amount_claimed: Optional[int] = None
+    amount_paid: Optional[int] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
+    raw_response: str = ""
+
+
+def _parse_claim_response(raw: str) -> ClaimExtractionResult:
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+        if raw.endswith("```"):
+            raw = raw[:-3]
+        raw = raw.strip()
+
+    data = json.loads(raw)
+
+    amount_claimed = data.get("amount_claimed")
+    if amount_claimed is not None:
+        amount_claimed = int(amount_claimed)
+
+    amount_paid = data.get("amount_paid")
+    if amount_paid is not None:
+        amount_paid = int(amount_paid)
+
+    status = data.get("status")
+    if status and status not in ("open", "in_progress", "closed", "denied"):
+        status = "open"
+
+    return ClaimExtractionResult(
+        claim_number=data.get("claim_number"),
+        status=status,
+        date_filed=data.get("date_filed"),
+        date_resolved=data.get("date_resolved"),
+        amount_claimed=amount_claimed,
+        amount_paid=amount_paid,
+        description=data.get("description"),
+        notes=data.get("notes"),
+        raw_response=raw,
+    )
 
 
 def _parse_coi_response(raw: str) -> COIExtractionResult:
