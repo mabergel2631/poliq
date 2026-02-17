@@ -16,7 +16,7 @@ Return ONLY valid JSON with this exact schema (use null for missing fields):
 {
   "carrier": "string or null - the full, correct insurance company name (e.g. 'State Farm Mutual Automobile Insurance Company', 'Allstate Insurance Company')",
   "policy_number": "string or null - the policy number, certificate number, or policy ID",
-  "policy_type": "string or null - one of: auto, home, renters, life, disability, flood, earthquake, liability, umbrella, workers_comp, general_liability, professional_liability, commercial_property, commercial_auto, cyber, bop, directors_officers, epli, inland_marine, other",
+  "policy_type": "string or null - one of: auto, motorcycle, boat, rv, home, health, dental, vision, renters, life, disability, pet, flood, earthquake, liability, umbrella, general_liability, professional_liability, commercial_property, commercial_auto, cyber, bop, workers_comp, directors_officers, epli, inland_marine, other",
   "scope": "string or null - personal or business",
   "coverage_amount": "integer or null - the COVERAGE LIMIT (max payout), NOT the premium. For auto this is the liability limit. For home this is the dwelling coverage. Example: 300000 for $300k coverage",
   "deductible": "integer or null - primary deductible in dollars",
