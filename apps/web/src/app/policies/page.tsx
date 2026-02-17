@@ -229,12 +229,15 @@ function PoliciesPageInner() {
   };
 
   const handleDelete = async (id: number) => {
+    setDeleteConfirm(null);
     try {
       await policiesApi.remove(id);
       setPolicies(prev => prev.filter(p => p.id !== id));
-      setDeleteConfirm(null);
       toast('Policy deleted', 'success');
-    } catch (err: any) { setError(err.message); }
+    } catch (err: any) {
+      setError(err.message);
+      toast(err.message || 'Failed to delete policy', 'error');
+    }
   };
 
   const handleAcceptShare = async (shareId: number) => {
