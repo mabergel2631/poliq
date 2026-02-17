@@ -94,6 +94,22 @@ def on_startup():
                 conn.execute(text("ALTER TABLE policies ADD COLUMN exposure_id INTEGER"))
             if "status" not in cols:
                 conn.execute(text("ALTER TABLE policies ADD COLUMN status VARCHAR(20) DEFAULT 'active'"))
+            # Health-specific fields
+            if "plan_subtype" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN plan_subtype VARCHAR(30)"))
+            if "out_of_pocket_max" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN out_of_pocket_max INTEGER"))
+            if "family_deductible" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN family_deductible INTEGER"))
+            if "family_oop_max" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN family_oop_max INTEGER"))
+            # Deductible tracking
+            if "deductible_type" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN deductible_type VARCHAR(20)"))
+            if "deductible_period_start" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN deductible_period_start DATE"))
+            if "deductible_applied" not in cols:
+                conn.execute(text("ALTER TABLE policies ADD COLUMN deductible_applied INTEGER"))
     if "users" in insp.get_table_names():
         user_cols = [c["name"] for c in insp.get_columns("users")]
         with engine.begin() as conn:
