@@ -230,10 +230,14 @@ def update_policy(policy_id: int, payload: PolicyUpdate, db: Session = Depends(g
 
 @router.delete("/{policy_id}")
 def delete_policy(policy_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    from .models_documents import Document
     policy = db.get(Policy, policy_id)
     if not policy or policy.user_id != user.id:
         raise HTTPException(status_code=404, detail="Policy not found")
     log_action(db, user.id, "deleted", "policy", policy.id)
+    # Delete documents first (FK lacks ondelete CASCADE)
+    for doc in db.execute(select(Document).where(Document.policy_id == policy_id)).scalars().all():
+        db.delete(doc)
     db.delete(policy)
     db.commit()
     return {"ok": True}
