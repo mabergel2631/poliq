@@ -318,16 +318,26 @@ def get_policy_coverages(policy_type: str) -> list[str]:
     policy_type = (policy_type or "").lower()
 
     coverage_map = {
-        # Personal
+        # Personal — vehicles
         "auto": ["auto_liability", "auto_collision", "auto_comprehensive", "medical_payments", "uninsured_motorist"],
+        "motorcycle": ["auto_liability", "auto_collision", "auto_comprehensive"],
+        "boat": ["watercraft_liability", "hull_coverage"],
+        "rv": ["auto_liability", "auto_collision", "auto_comprehensive"],
+        # Personal — property
         "home": ["dwelling_coverage", "personal_property", "home_liability", "medical_payments"],
         "renters": ["personal_property", "home_liability"],
-        "life": ["life_insurance"],
-        "umbrella": ["umbrella_liability"],
-        "liability": ["umbrella_liability"],
-        "disability": ["disability_income"],
         "flood": [],
         "earthquake": [],
+        # Personal — health & life
+        "health": ["health_insurance"],
+        "dental": ["dental_insurance"],
+        "vision": ["vision_insurance"],
+        "life": ["life_insurance"],
+        "disability": ["disability_income"],
+        "pet": ["pet_insurance"],
+        # Both
+        "umbrella": ["umbrella_liability"],
+        "liability": ["umbrella_liability"],
         # Business
         "workers_comp": [],
         "general_liability": ["general_liability"],
@@ -438,6 +448,52 @@ def analyze_coverage_gaps(
                 "recommendation": "An umbrella policy provides additional liability coverage above your auto and home limits. Protects your assets from lawsuits.",
                 "category": "umbrella_liability"
             })
+
+    # No health insurance
+    if "health" not in policy_types:
+        severity = "high" if user_context.get("has_dependents") else "medium"
+        gaps.append({
+            "id": "no_health",
+            "name": "Health Insurance",
+            "severity": severity,
+            "description": "No health insurance policy on file.",
+            "recommendation": "Health insurance is essential. If employer-sponsored, add it here to track deductibles and out-of-pocket costs.",
+            "category": "health_insurance"
+        })
+
+    # No dental
+    if "dental" not in policy_types:
+        gaps.append({
+            "id": "no_dental",
+            "name": "Dental Insurance",
+            "severity": "info",
+            "description": "No dental insurance policy on file.",
+            "recommendation": "Dental coverage helps manage preventive and restorative care costs.",
+            "category": "dental_insurance"
+        })
+
+    # No vision
+    if "vision" not in policy_types:
+        gaps.append({
+            "id": "no_vision",
+            "name": "Vision Insurance",
+            "severity": "info",
+            "description": "No vision insurance policy on file.",
+            "recommendation": "Vision plans cover eye exams, glasses, and contacts at reduced cost.",
+            "category": "vision_insurance"
+        })
+
+    # No disability — critical for income earners
+    if "disability" not in policy_types:
+        severity = "medium" if user_context.get("has_dependents") else "info"
+        gaps.append({
+            "id": "no_disability",
+            "name": "Disability Insurance",
+            "severity": severity,
+            "description": "No disability insurance on file.",
+            "recommendation": "Disability insurance replaces income if you can't work due to illness or injury. Often overlooked but critical.",
+            "category": "disability_income"
+        })
 
     # Business gap analysis
     business_types = {"general_liability", "professional_liability", "commercial_property",

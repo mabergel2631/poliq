@@ -43,6 +43,12 @@ class Policy(Base):
     deductible: Mapped[int | None] = mapped_column(Integer, nullable=True)
     premium_amount: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # Health-specific fields
+    plan_subtype: Mapped[str | None] = mapped_column(String(30), nullable=True)  # HMO, PPO, EPO, HDHP, POS
+    out_of_pocket_max: Mapped[int | None] = mapped_column(Integer, nullable=True)  # cents
+    family_deductible: Mapped[int | None] = mapped_column(Integer, nullable=True)  # cents
+    family_oop_max: Mapped[int | None] = mapped_column(Integer, nullable=True)  # cents
+
     # Deductible tracking
     deductible_type: Mapped[str | None] = mapped_column(String(20), nullable=True)  # annual, per_incident
     deductible_period_start: Mapped[Date | None] = mapped_column(Date, nullable=True)

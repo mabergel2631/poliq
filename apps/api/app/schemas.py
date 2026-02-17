@@ -27,7 +27,8 @@ class Token(BaseModel):
 # ── Policies ──────────────────────────────────────────
 
 VALID_POLICY_TYPES = [
-    "auto", "home", "health", "renters", "life", "disability", "flood", "earthquake",
+    "auto", "motorcycle", "boat", "rv", "home", "health", "dental", "vision",
+    "renters", "life", "disability", "pet", "flood", "earthquake",
     "liability", "umbrella", "general_liability", "professional_liability",
     "commercial_property", "commercial_auto", "cyber", "bop", "workers_comp",
     "directors_officers", "epli", "inland_marine", "other",
@@ -47,6 +48,11 @@ class PolicyBase(BaseModel):
     renewal_date: Optional[date] = None
     exposure_id: Optional[int] = None
     status: Optional[Literal["active", "expired", "archived"]] = "active"
+    # Health-specific fields
+    plan_subtype: Optional[str] = None  # HMO, PPO, EPO, HDHP, POS
+    out_of_pocket_max: Optional[int] = None
+    family_deductible: Optional[int] = None
+    family_oop_max: Optional[int] = None
     # Deductible tracking
     deductible_type: Optional[Literal["annual", "per_incident"]] = None
     deductible_period_start: Optional[date] = None
@@ -77,6 +83,11 @@ class PolicyUpdate(BaseModel):
     renewal_date: Optional[date] = None
     exposure_id: Optional[int] = None
     status: Optional[Literal["active", "expired", "archived"]] = None
+    # Health-specific fields
+    plan_subtype: Optional[str] = None
+    out_of_pocket_max: Optional[int] = None
+    family_deductible: Optional[int] = None
+    family_oop_max: Optional[int] = None
     # Deductible tracking
     deductible_type: Optional[Literal["annual", "per_incident"]] = None
     deductible_period_start: Optional[date] = None

@@ -73,6 +73,11 @@ def list_policies(db: Session = Depends(get_db), user: User = Depends(get_curren
             "exposure_id": p.exposure_id,
             "exposure_name": p.exposure.name if p.exposure else None,
             "status": p.status or "active",
+            # Health-specific
+            "plan_subtype": p.plan_subtype,
+            "out_of_pocket_max": p.out_of_pocket_max,
+            "family_deductible": p.family_deductible,
+            "family_oop_max": p.family_oop_max,
             # Deductible tracking
             "deductible_type": p.deductible_type,
             "deductible_period_start": str(p.deductible_period_start) if p.deductible_period_start else None,

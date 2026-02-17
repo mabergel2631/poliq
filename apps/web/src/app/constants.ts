@@ -2,15 +2,23 @@
 // Single source of truth for display config used across pages.
 
 export const POLICY_TYPE_CONFIG: Record<string, { icon: string; label: string; group: 'personal' | 'business' | 'both' }> = {
-  // Personal
+  // Personal — vehicles
   auto: { icon: '🚗', label: 'Auto', group: 'personal' },
+  motorcycle: { icon: '🏍️', label: 'Motorcycle', group: 'personal' },
+  boat: { icon: '⛵', label: 'Boat / Watercraft', group: 'personal' },
+  rv: { icon: '🚐', label: 'RV / Motor Home', group: 'personal' },
+  // Personal — property
   home: { icon: '🏠', label: 'Home', group: 'personal' },
-  health: { icon: '🏥', label: 'Health', group: 'personal' },
   renters: { icon: '🏢', label: 'Renters', group: 'personal' },
-  life: { icon: '❤️', label: 'Life', group: 'personal' },
-  disability: { icon: '🩼', label: 'Disability', group: 'personal' },
   flood: { icon: '🌊', label: 'Flood', group: 'personal' },
   earthquake: { icon: '🌋', label: 'Earthquake', group: 'personal' },
+  // Personal — health & life
+  health: { icon: '🏥', label: 'Health', group: 'personal' },
+  dental: { icon: '🦷', label: 'Dental', group: 'personal' },
+  vision: { icon: '👓', label: 'Vision', group: 'personal' },
+  life: { icon: '❤️', label: 'Life', group: 'personal' },
+  disability: { icon: '🩼', label: 'Disability', group: 'personal' },
+  pet: { icon: '🐾', label: 'Pet', group: 'personal' },
   // Both
   liability: { icon: '🛡️', label: 'Liability', group: 'both' },
   umbrella: { icon: '☂️', label: 'Umbrella', group: 'both' },
@@ -78,4 +86,4 @@ export const DOC_TYPES: Record<string, string> = {
 };
 
 /** Emergency-priority order for grouping policies */
-export const EMERGENCY_TYPE_ORDER = ['auto', 'home', 'health', 'renters', 'life', 'liability', 'umbrella', 'workers_comp', 'other'];
+export const EMERGENCY_TYPE_ORDER = ['auto', 'motorcycle', 'home', 'health', 'dental', 'vision', 'renters', 'life', 'disability', 'pet', 'boat', 'rv', 'liability', 'umbrella', 'workers_comp', 'other'];
