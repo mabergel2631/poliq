@@ -6,6 +6,7 @@ import { useAuth } from '../../../lib/auth';
 import { policiesApi, renewalsApi, remindersApi, premiumsApi, sharingApi, documentsApi, gapsApi, inboundApi, profileApi, Policy, PolicyCreate, RenewalItem, SmartAlert, SharedPolicy, PendingShare, CoverageGap, CoverageSummary, InboundAddress, PolicyDraftData } from '../../../lib/api';
 import { useToast } from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
+import BulkShareModal from '../components/BulkShareModal';
 import { APP_NAME } from '../config';
 import { POLICY_TYPE_CONFIG, POLICY_TYPES, POLICY_TYPE_CATEGORIES, STATUS_COLORS, SEVERITY_COLORS } from '../constants';
 import TabNav from '../components/TabNav';
@@ -54,6 +55,7 @@ function PoliciesPageInner() {
   const [extracting, setExtracting] = useState(false);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [profileDismissed, setProfileDismissed] = useState(false);
+  const [showBulkShare, setShowBulkShare] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -471,6 +473,21 @@ function PoliciesPageInner() {
         onCancel={() => setDeleteConfirm(null)}
       />
 
+      {/* Bulk Share Modal */}
+      <BulkShareModal
+        open={showBulkShare}
+        policies={activePolicies}
+        onClose={() => setShowBulkShare(false)}
+        onSuccess={(created, skipped) => {
+          setShowBulkShare(false);
+          const parts: string[] = [];
+          if (created > 0) parts.push(`${created} shared`);
+          if (skipped > 0) parts.push(`${skipped} already shared`);
+          toast(parts.join(', '), 'success');
+          loadAll();
+        }}
+      />
+
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 24px' }}>
 
         {/* ═══════════════════════════════════════════════════════════════
@@ -726,6 +743,15 @@ function PoliciesPageInner() {
             >
               Emergency Access
             </button>
+            {activePolicies.length > 0 && (
+              <button
+                onClick={() => setShowBulkShare(true)}
+                className="btn btn-outline"
+                style={{ padding: '14px 28px', fontSize: 15 }}
+              >
+                Share Access
+              </button>
+            )}
             {activePolicies.length >= 2 && (
               <button
                 onClick={() => router.push('/policies/compare')}

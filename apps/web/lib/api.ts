@@ -609,6 +609,20 @@ export type PendingShare = {
   policy: { id: number; carrier: string; policy_type: string; nickname?: string | null };
 };
 
+export type BulkShareCreate = {
+  policy_ids: number[];
+  shared_with_email: string;
+  permission: string;
+  role_label?: string | null;
+  expires_at?: string | null;
+};
+
+export type BulkShareResult = {
+  created: number;
+  skipped: number;
+  total: number;
+};
+
 export const sharingApi = {
   share(policyId: number, payload: ShareCreate): Promise<PolicyShareType> {
     return request<PolicyShareType>(`/policies/${policyId}/share`, {
@@ -631,6 +645,13 @@ export const sharingApi = {
   },
   revoke(shareId: number): Promise<{ ok: boolean }> {
     return request<{ ok: boolean }>(`/shares/${shareId}`, { method: "DELETE" });
+  },
+  shareBulk(payload: BulkShareCreate): Promise<BulkShareResult> {
+    return request<BulkShareResult>("/policies/share-bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
   },
 };
 

@@ -8,9 +8,59 @@ from .auth import get_current_user
 from .db import get_db
 from .models import Policy, User
 from .models_features import PolicyShare
-from .schemas import ShareCreate, ShareOut
+from .audit_helper import log_action
+from .schemas import ShareCreate, ShareOut, BulkShareCreate, BulkShareResult
 
 router = APIRouter(tags=["sharing"])
+
+
+@router.post("/policies/share-bulk", response_model=BulkShareResult)
+def bulk_share(payload: BulkShareCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if payload.shared_with_email == user.email:
+        raise HTTPException(status_code=400, detail="Cannot share with yourself")
+
+    if not payload.policy_ids:
+        raise HTTPException(status_code=400, detail="No policies selected")
+
+    # Batch-validate all policy_ids belong to current user
+    owned = db.execute(
+        select(Policy.id).where(Policy.id.in_(payload.policy_ids), Policy.user_id == user.id)
+    ).scalars().all()
+    owned_set = set(owned)
+    invalid = [pid for pid in payload.policy_ids if pid not in owned_set]
+    if invalid:
+        raise HTTPException(status_code=404, detail=f"Policies not found: {invalid}")
+
+    # Batch-query existing shares to skip duplicates
+    existing = db.execute(
+        select(PolicyShare.policy_id)
+        .where(PolicyShare.policy_id.in_(payload.policy_ids))
+        .where(PolicyShare.shared_with_email == payload.shared_with_email)
+    ).scalars().all()
+    existing_set = set(existing)
+
+    created = 0
+    for pid in payload.policy_ids:
+        if pid in existing_set:
+            continue
+        share = PolicyShare(
+            policy_id=pid,
+            owner_id=user.id,
+            shared_with_email=payload.shared_with_email,
+            permission=payload.permission,
+            role_label=payload.role_label,
+            expires_at=payload.expires_at,
+        )
+        db.add(share)
+        created += 1
+
+    db.commit()
+
+    log_action(db, user.id, "bulk_share", "policy_share", 0,
+               f"Shared {created} policies with {payload.shared_with_email}")
+    db.commit()
+
+    return BulkShareResult(created=created, skipped=len(existing_set), total=len(payload.policy_ids))
 
 
 @router.post("/policies/{policy_id}/share", response_model=ShareOut, status_code=201)

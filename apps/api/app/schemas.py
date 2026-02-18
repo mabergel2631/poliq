@@ -327,6 +327,20 @@ class ShareOut(BaseModel):
         from_attributes = True
 
 
+class BulkShareCreate(BaseModel):
+    policy_ids: List[int]
+    shared_with_email: EmailStr
+    permission: Literal["view", "edit"] = "view"
+    role_label: Optional[str] = None
+    expires_at: Optional[date] = None
+
+
+class BulkShareResult(BaseModel):
+    created: int
+    skipped: int
+    total: int
+
+
 # ── Exposures ───────────────────────────────────────
 
 class ExposureCreate(BaseModel):
