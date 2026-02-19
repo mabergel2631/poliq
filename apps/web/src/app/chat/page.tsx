@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '../../../lib/auth';
 import { chatApi, ChatConversation, ChatMessageData } from '../../../lib/api';
 
@@ -300,11 +301,12 @@ export default function ChatPage() {
                   border: msg.role === 'assistant' ? '1px solid var(--color-border)' : 'none',
                   fontSize: 14,
                   lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                 }}
               >
-                {msg.content}
+                {msg.role === 'assistant' ? (
+                  <div className="chat-markdown"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                ) : msg.content}
               </div>
             </div>
           ))}
@@ -322,11 +324,12 @@ export default function ChatPage() {
                   border: '1px solid var(--color-border)',
                   fontSize: 14,
                   lineHeight: 1.6,
-                  whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                 }}
               >
-                {streamingText || (
+                {streamingText ? (
+                  <div className="chat-markdown"><ReactMarkdown>{streamingText}</ReactMarkdown></div>
+                ) : (
                   <span style={{ color: 'var(--color-text-muted)' }}>Thinking...</span>
                 )}
                 <span style={{ display: 'inline-block', width: 6, height: 16, backgroundColor: 'var(--color-primary)', marginLeft: 2, animation: 'blink 1s infinite', verticalAlign: 'text-bottom' }} />
@@ -403,12 +406,24 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Blink animation */}
+      {/* Blink animation + markdown styles */}
       <style>{`
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
         }
+        .chat-markdown p { margin: 0 0 8px; }
+        .chat-markdown p:last-child { margin-bottom: 0; }
+        .chat-markdown ul, .chat-markdown ol { margin: 4px 0 8px; padding-left: 20px; }
+        .chat-markdown li { margin-bottom: 2px; }
+        .chat-markdown h3 { font-size: 15px; font-weight: 700; margin: 12px 0 4px; }
+        .chat-markdown h4 { font-size: 14px; font-weight: 600; margin: 8px 0 4px; }
+        .chat-markdown strong { font-weight: 700; }
+        .chat-markdown table { border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .chat-markdown th, .chat-markdown td { border: 1px solid var(--color-border); padding: 4px 10px; text-align: left; }
+        .chat-markdown th { font-weight: 600; background: rgba(0,0,0,0.03); }
+        .chat-markdown code { background: rgba(0,0,0,0.05); padding: 1px 4px; border-radius: 3px; font-size: 13px; }
+        .chat-markdown hr { border: none; border-top: 1px solid var(--color-border); margin: 12px 0; }
         @media (max-width: 768px) {
           .chat-sidebar {
             position: fixed !important;
