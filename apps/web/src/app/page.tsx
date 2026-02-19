@@ -67,7 +67,7 @@ export default function Home() {
           pointerEvents: 'none',
         }} />
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-          <div style={{ marginBottom: 24 }}>
+          <div style={{ marginBottom: 28 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/brand/covrabl-mark.svg"
@@ -76,6 +76,19 @@ export default function Home() {
               height={64}
               style={{ display: 'inline-block', opacity: 0.9 }}
             />
+            <div style={{
+              fontSize: 22, fontWeight: 700, marginTop: 12,
+              letterSpacing: 'var(--letter-spacing-tight)',
+              fontFamily: 'var(--font-heading)',
+            }}>
+              COVRABL
+            </div>
+            <div style={{
+              fontSize: 13, fontWeight: 500, marginTop: 4, opacity: 0.65,
+              letterSpacing: '0.15em', textTransform: 'uppercase',
+            }}>
+              Insurance Intelligence
+            </div>
           </div>
           <h1 style={{
             fontSize: 48, fontWeight: 700, margin: '0 0 20px', lineHeight: 1.15,
@@ -85,7 +98,7 @@ export default function Home() {
             All your coverage, organized and understood.
           </h1>
           <p style={{ fontSize: 18, opacity: 0.95, margin: '0 0 8px', lineHeight: 1.7, maxWidth: 720, marginLeft: 'auto', marginRight: 'auto', fontWeight: 500 }}>
-            Upload your policies. {APP_NAME} reads them, finds gaps, tracks renewals, and keeps the right people informed.
+            Upload your policies. See what's covered, what's at risk, and what's changing at renewal.
           </p>
           <p style={{ fontSize: 15, opacity: 0.7, margin: '0 0 36px', lineHeight: 1.7, maxWidth: 600, marginLeft: 'auto', marginRight: 'auto', letterSpacing: 'var(--letter-spacing-wide)' }}>
             Private. Independent. No credit card required.
@@ -111,9 +124,9 @@ export default function Home() {
             </button>
           </div>
           <div style={{ display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap', fontSize: 13, opacity: 0.6, letterSpacing: 'var(--letter-spacing-wide)' }}>
+            <span>Not an insurance company</span>
+            <span>Not a lead generator</span>
             <span>Your data stays yours</span>
-            <span>Encrypted &amp; private</span>
-            <span>Setup in ~10 minutes</span>
           </div>
         </div>
       </section>
