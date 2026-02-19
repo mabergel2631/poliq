@@ -329,28 +329,31 @@ function PoliciesPageInner() {
     );
   });
 
-  // Sort policies when a sort option is active
-  const sortedPolicies = sortBy === 'default' ? filteredPolicies : [...filteredPolicies].sort((a, b) => {
-    switch (sortBy) {
-      case 'carrier':
-        return a.carrier.localeCompare(b.carrier);
-      case 'renewal': {
-        const aDate = a.renewal_date ? new Date(a.renewal_date).getTime() : Infinity;
-        const bDate = b.renewal_date ? new Date(b.renewal_date).getTime() : Infinity;
-        return aDate - bDate;
+  // Sort helper — applied within each scope group
+  const applySorting = (list: Policy[]): Policy[] => {
+    if (sortBy === 'default') return list;
+    return [...list].sort((a, b) => {
+      switch (sortBy) {
+        case 'carrier':
+          return a.carrier.localeCompare(b.carrier);
+        case 'renewal': {
+          const aDate = a.renewal_date ? new Date(a.renewal_date).getTime() : Infinity;
+          const bDate = b.renewal_date ? new Date(b.renewal_date).getTime() : Infinity;
+          return aDate - bDate;
+        }
+        case 'type':
+          return a.policy_type.localeCompare(b.policy_type);
+        case 'newest':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        default:
+          return 0;
       }
-      case 'type':
-        return a.policy_type.localeCompare(b.policy_type);
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      default:
-        return 0;
-    }
-  });
+    });
+  };
 
-  // Group policies by scope, then by type/business
-  const personalPolicies = filteredPolicies.filter(p => p.scope === 'personal');
-  const businessPolicies = filteredPolicies.filter(p => p.scope === 'business');
+  // Group policies by scope, then sort within each group
+  const personalPolicies = applySorting(filteredPolicies.filter(p => p.scope === 'personal'));
+  const businessPolicies = applySorting(filteredPolicies.filter(p => p.scope === 'business'));
 
   const personalByType: Record<string, Policy[]> = {};
   personalPolicies.forEach(p => {
@@ -359,13 +362,11 @@ function PoliciesPageInner() {
     personalByType[key].push(p);
   });
 
-  const businessByName: Record<string, Record<string, Policy[]>> = {};
+  const businessByName: Record<string, Policy[]> = {};
   businessPolicies.forEach(p => {
     const bizName = p.business_name || 'Ungrouped';
-    if (!businessByName[bizName]) businessByName[bizName] = {};
-    const typeKey = p.policy_type || 'other';
-    if (!businessByName[bizName][typeKey]) businessByName[bizName][typeKey] = [];
-    businessByName[bizName][typeKey].push(p);
+    if (!businessByName[bizName]) businessByName[bizName] = [];
+    businessByName[bizName].push(p);
   });
 
   if (!token) return null;
@@ -776,7 +777,7 @@ function PoliciesPageInner() {
                       cursor: 'pointer',
                     }}
                   >
-                    <option value="default">Grouped</option>
+                    <option value="default">Default</option>
                     <option value="carrier">Carrier A–Z</option>
                     <option value="renewal">Renewal date</option>
                     <option value="type">Policy type</option>
@@ -795,11 +796,6 @@ function PoliciesPageInner() {
               <p style={{ fontSize: 16, color: 'var(--color-text-secondary)', margin: 0 }}>
                 {search ? 'No policies match your search.' : 'No policies yet. Add your first policy to get started.'}
               </p>
-            </div>
-          ) : sortBy !== 'default' ? (
-            /* ── FLAT SORTED VIEW ── */
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-              {sortedPolicies.map(p => renderPolicyCard(p))}
             </div>
           ) : (
             <>
@@ -823,33 +819,30 @@ function PoliciesPageInner() {
               {/* ── BUSINESS SECTION ── */}
               {businessPolicies.length > 0 && scopeTab !== 'personal' && (
                 <div>
-                  {Object.entries(businessByName).map(([bizName, typeGroups]) => {
-                    const allBizPolicies = Object.values(typeGroups).flat();
-                    return (
-                      <div key={bizName} style={{ marginBottom: 28 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                          <span style={{ fontSize: 16 }}>🏢</span>
-                          <h3
-                            onClick={bizName !== 'Ungrouped' ? () => router.push(`/policies/business/${encodeURIComponent(bizName)}`) : undefined}
-                            style={{
-                              margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)',
-                              textTransform: 'uppercase', letterSpacing: '0.05em',
-                              cursor: bizName !== 'Ungrouped' ? 'pointer' : 'default',
-                              transition: 'color 0.15s',
-                            }}
-                            onMouseEnter={bizName !== 'Ungrouped' ? (e) => { e.currentTarget.style.color = 'var(--color-primary)'; } : undefined}
-                            onMouseLeave={bizName !== 'Ungrouped' ? (e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; } : undefined}
-                          >
-                            {bizName} ({allBizPolicies.length})
-                          </h3>
-                          {bizName !== 'Ungrouped' && <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>&rarr;</span>}
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
-                          {allBizPolicies.map(p => renderPolicyCard(p))}
-                        </div>
+                  {Object.entries(businessByName).map(([bizName, bizPolicies]) => (
+                    <div key={bizName} style={{ marginBottom: 28 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                        <span style={{ fontSize: 16 }}>🏢</span>
+                        <h3
+                          onClick={bizName !== 'Ungrouped' ? () => router.push(`/policies/business/${encodeURIComponent(bizName)}`) : undefined}
+                          style={{
+                            margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)',
+                            textTransform: 'uppercase', letterSpacing: '0.05em',
+                            cursor: bizName !== 'Ungrouped' ? 'pointer' : 'default',
+                            transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={bizName !== 'Ungrouped' ? (e) => { e.currentTarget.style.color = 'var(--color-primary)'; } : undefined}
+                          onMouseLeave={bizName !== 'Ungrouped' ? (e) => { e.currentTarget.style.color = 'var(--color-text-secondary)'; } : undefined}
+                        >
+                          {bizName} ({bizPolicies.length})
+                        </h3>
+                        {bizName !== 'Ungrouped' && <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>&rarr;</span>}
                       </div>
-                    );
-                  })}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+                        {bizPolicies.map(p => renderPolicyCard(p))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </>
