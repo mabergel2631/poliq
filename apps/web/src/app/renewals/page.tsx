@@ -146,7 +146,7 @@ function PolicyCard({ policy }: { policy: RenewalPolicySummary }) {
       {hasChanges ? (
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 6 }}>
-            Changes Detected ({policy.changes.length})
+            What changed ({policy.changes.length})
           </div>
           {policy.changes.map((ch) => (
             <ChangeRow key={ch.id} change={ch} />
@@ -204,10 +204,10 @@ export default function RenewalsPage() {
     <div style={{ padding: '24px 24px 48px', maxWidth: 900, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700 }}>Renewal Summary</h1>
+        <h1 style={{ margin: '0 0 4px', fontSize: 24, fontWeight: 700 }}>Nothing changes without you knowing</h1>
         {data && (
           <p style={{ margin: 0, fontSize: 14, color: 'var(--color-text-muted)' }}>
-            {data.total_renewing} {data.total_renewing === 1 ? 'policy' : 'policies'} renewing in the next 90 days
+            {data.total_renewing} {data.total_renewing === 1 ? 'policy' : 'policies'} renewing in the next 90 days — every change explained
           </p>
         )}
       </div>
@@ -225,8 +225,8 @@ export default function RenewalsPage() {
       {!loading && data && data.total_renewing === 0 && (
         <EmptyState
           icon="&#10003;"
-          title="All clear!"
-          subtitle="No policies renewing in the next 90 days."
+          title="No upcoming renewals"
+          subtitle="When your policies renew, Covrabl will show you exactly what changed."
         />
       )}
 
