@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: '/certificates', label: 'Certificates', icon: '📜' },
   { href: '/emergency', label: 'Emergency', icon: '🚨', urgent: true },
   { href: '/audit', label: 'Alerts', icon: '🔔' },
+  { href: '/renewals', label: 'Renewals', icon: '🔄' },
   { href: '/chat', label: 'Ask AI', icon: '💬' },
   { href: '/policies/compare', label: 'Compare', icon: '⚖️' },
   { href: '/profile', label: 'Profile', icon: '👤' },

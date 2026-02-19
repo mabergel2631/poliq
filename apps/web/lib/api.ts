@@ -387,9 +387,44 @@ export type RenewalItem = {
   coverage_amount?: number | null;
 };
 
+export type RenewalChange = {
+  id: number;
+  field_key: string;
+  old_value: string | null;
+  new_value: string | null;
+  delta_type: string;
+  severity: string;
+  created_at: string;
+};
+
+export type RenewalPolicySummary = {
+  id: number;
+  carrier: string;
+  policy_type: string;
+  policy_number: string;
+  nickname?: string | null;
+  renewal_date: string;
+  days_until_renewal: number;
+  coverage_amount?: number | null;
+  deductible?: number | null;
+  premium_amount?: number | null;
+  agent_name?: string | null;
+  agent_phone?: string | null;
+  changes: RenewalChange[];
+};
+
+export type RenewalSummaryResult = {
+  policies: RenewalPolicySummary[];
+  total_renewing: number;
+  total_with_changes: number;
+};
+
 export const renewalsApi = {
   upcoming(days: number = 30): Promise<RenewalItem[]> {
     return request<RenewalItem[]>(`/renewals/upcoming?days=${days}`);
+  },
+  summary(): Promise<RenewalSummaryResult> {
+    return request<RenewalSummaryResult>("/renewals/summary");
   },
 };
 
