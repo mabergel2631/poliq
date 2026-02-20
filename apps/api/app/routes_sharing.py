@@ -1,11 +1,13 @@
+import asyncio
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .auth import get_current_user
 from .db import get_db
+from .email import send_share_email
 from .models import Policy, User
 from .models_features import PolicyShare
 from .audit_helper import log_action
@@ -15,7 +17,7 @@ router = APIRouter(tags=["sharing"])
 
 
 @router.post("/policies/share-bulk", response_model=BulkShareResult)
-def bulk_share(payload: BulkShareCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def bulk_share(payload: BulkShareCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     if payload.shared_with_email == user.email:
         raise HTTPException(status_code=400, detail="Cannot share with yourself")
 
@@ -60,11 +62,17 @@ def bulk_share(payload: BulkShareCreate, db: Session = Depends(get_db), user: Us
                f"Shared {created} policies with {payload.shared_with_email}")
     db.commit()
 
+    if created > 0:
+        background_tasks.add_task(
+            asyncio.run,
+            send_share_email(payload.shared_with_email, user.email, created, payload.permission),
+        )
+
     return BulkShareResult(created=created, skipped=len(existing_set), total=len(payload.policy_ids))
 
 
 @router.post("/policies/{policy_id}/share", response_model=ShareOut, status_code=201)
-def share_policy(policy_id: int, payload: ShareCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def share_policy(policy_id: int, payload: ShareCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     policy = db.get(Policy, policy_id)
     if not policy or policy.user_id != user.id:
         raise HTTPException(status_code=404, detail="Policy not found")
@@ -93,6 +101,12 @@ def share_policy(policy_id: int, payload: ShareCreate, db: Session = Depends(get
     db.add(share)
     db.commit()
     db.refresh(share)
+
+    background_tasks.add_task(
+        asyncio.run,
+        send_share_email(payload.shared_with_email, user.email, 1, payload.permission),
+    )
+
     return share
 
 

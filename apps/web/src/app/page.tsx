@@ -151,14 +151,14 @@ export default function Home() {
             </div>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14, overflow: 'hidden',
+              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, overflow: 'hidden', boxSizing: 'border-box',
             }}>
               {/* Fake document card */}
               <div style={{
                 background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10,
               }}>
-                <span style={{ fontSize: 22 }}>📄</span>
+                <span style={{ fontSize: 20 }}>📄</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>auto-policy-2026.pdf</div>
                   <div style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>Uploaded just now</div>
@@ -171,7 +171,7 @@ export default function Home() {
               {/* Extracted fields */}
               <div style={{
                 background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                padding: '10px 14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 16px',
+                padding: '8px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 14px',
               }}>
                 {[
                   { label: 'Carrier', value: 'State Farm' },
@@ -194,7 +194,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 64 }}>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 12, overflow: 'hidden',
+              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflow: 'hidden', boxSizing: 'border-box',
               order: 0,
             }}>
               {/* Stat cards row */}
@@ -206,7 +206,7 @@ export default function Home() {
                 ].map(s => (
                   <div key={s.label} style={{
                     background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                    padding: '10px 10px', textAlign: 'center',
+                    padding: '8px 8px', textAlign: 'center',
                   }}>
                     <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', marginTop: 2 }}>{s.value}</div>
@@ -254,14 +254,14 @@ export default function Home() {
             </div>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, overflow: 'hidden',
+              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflow: 'hidden', boxSizing: 'border-box',
             }}>
               {/* Emergency Coverage Card header */}
               <div style={{
                 background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                padding: '12px 14px',
+                padding: '10px 12px',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 14 }}>🆘</span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)' }}>Emergency Coverage Card</span>
                   <span style={{

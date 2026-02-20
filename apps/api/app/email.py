@@ -48,3 +48,44 @@ async def send_reset_email(to_email: str, reset_url: str) -> None:
             logger.exception("Failed to send reset email to %s", to_email)
     else:
         logger.info("SMTP not configured — reset link for %s: %s", to_email, reset_url)
+
+
+async def send_share_email(
+    to_email: str,
+    from_name: str,
+    policy_count: int,
+    permission: str,
+) -> None:
+    app_url = settings.app_url.rstrip("/")
+    html = f"""\
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px;">
+  <h2 style="color: #1a1a2e; margin-bottom: 16px;">Someone shared coverage with you</h2>
+  <p style="color: #555; line-height: 1.6;">
+    <strong>{from_name}</strong> shared {policy_count} insurance polic{"y" if policy_count == 1 else "ies"} with you on Covrabl ({permission} access).
+  </p>
+  <p style="color: #555; line-height: 1.6;">
+    Sign in or create a free account to view the shared coverage details.
+  </p>
+  <a href="{app_url}/login"
+     style="display: inline-block; background: #1e3a5f; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0;">
+    View Shared Policies
+  </a>
+  <p style="color: #888; font-size: 13px; line-height: 1.5;">
+    Use this email address ({to_email}) when creating your account so the shared policies appear automatically.
+  </p>
+</body>
+</html>"""
+
+    if settings.smtp_host and settings.smtp_user:
+        try:
+            await asyncio.to_thread(
+                _send_smtp, to_email,
+                f"{from_name} shared insurance coverage with you on Covrabl",
+                html,
+            )
+            logger.info("Share notification sent to %s", to_email)
+        except Exception:
+            logger.exception("Failed to send share email to %s", to_email)
+    else:
+        logger.info("SMTP not configured — share notification for %s skipped", to_email)
