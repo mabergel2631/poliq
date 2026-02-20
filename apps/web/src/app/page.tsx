@@ -151,7 +151,7 @@ export default function Home() {
             </div>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, overflow: 'hidden', boxSizing: 'border-box',
+              borderRadius: 'var(--radius-lg)', minHeight: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, boxSizing: 'border-box',
             }}>
               {/* Fake document card */}
               <div style={{
@@ -194,7 +194,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center', marginBottom: 64 }}>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflow: 'hidden', boxSizing: 'border-box',
+              borderRadius: 'var(--radius-lg)', minHeight: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, boxSizing: 'border-box',
               order: 0,
             }}>
               {/* Stat cards row */}
@@ -254,7 +254,7 @@ export default function Home() {
             </div>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)', height: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, overflow: 'hidden', boxSizing: 'border-box',
+              borderRadius: 'var(--radius-lg)', minHeight: 280, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, boxSizing: 'border-box',
             }}>
               {/* Emergency Coverage Card header */}
               <div style={{
