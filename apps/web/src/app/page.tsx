@@ -247,54 +247,55 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Step 3</div>
-              <h3 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Stay continuously ready</h3>
+              <h3 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 12px', color: 'var(--color-text)' }}>Be ready when it matters</h3>
               <p style={{ fontSize: 15, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.7 }}>
-                Renewal alerts before every deadline. Gap detection when coverage changes. Secure sharing with family, advisors, and emergency contacts.
+                Your Emergency Coverage Card puts critical policy details, claims numbers, and step-by-step guidance in one place — shareable with family and accessible when you need it most.
               </p>
             </div>
             <div style={{
               backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)',
               borderRadius: 'var(--radius-lg)', height: 280, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, overflow: 'hidden',
             }}>
-              {/* Renewal header card */}
+              {/* Emergency Coverage Card header */}
               <div style={{
                 background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
                 padding: '12px 14px',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 14 }}>🚗</span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>State Farm · Auto</span>
+                  <span style={{ fontSize: 14 }}>🆘</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)' }}>Emergency Coverage Card</span>
                   <span style={{
-                    fontSize: 10, fontWeight: 600, color: '#854d0e', background: '#fef9c3',
+                    fontSize: 10, fontWeight: 600, color: '#15803d', background: '#dcfce7',
                     padding: '2px 8px', borderRadius: 10, marginLeft: 'auto', whiteSpace: 'nowrap',
-                  }}>Renews in 23 days</span>
+                  }}>Active</span>
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Policy SF-8834201 · Renewal Mar 14, 2026</div>
+                <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>Shared with Sarah M. · Last updated today</div>
               </div>
-              {/* Change row — premium increase */}
+              {/* Policy quick-access rows */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { icon: '🚗', type: 'Auto', carrier: 'State Farm', claims: '1-800-732-5246' },
+                  { icon: '🏠', type: 'Home', carrier: 'Allstate', claims: '1-800-255-7828' },
+                  { icon: '❤️', type: 'Health', carrier: 'Blue Cross', claims: '1-800-262-2583' },
+                ].map(p => (
+                  <div key={p.type} style={{
+                    background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+                    padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 8,
+                  }}>
+                    <span style={{ fontSize: 12 }}>{p.icon}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text)', minWidth: 36 }}>{p.type}</span>
+                    <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>{p.carrier}</span>
+                    <span style={{ fontSize: 10, color: 'var(--color-text-secondary)', marginLeft: 'auto', fontFamily: 'monospace' }}>{p.claims}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Checklist hint */}
               <div style={{
                 background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8,
+                padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, color: '#854d0e', background: '#fef9c3',
-                  padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap',
-                }}>⚠️ Change</span>
-                <span style={{ fontSize: 11, color: 'var(--color-text)' }}>
-                  Premium <span style={{ fontWeight: 600 }}>$1,180</span> → <span style={{ fontWeight: 600, color: '#b91c1c' }}>$1,340</span>
-                </span>
-                <span style={{ fontSize: 10, color: 'var(--color-text-muted)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>+$160/yr</span>
-              </div>
-              {/* No other changes */}
-              <div style={{
-                background: '#fff', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, color: '#15803d', background: '#dcfce7',
-                  padding: '2px 8px', borderRadius: 10, whiteSpace: 'nowrap',
-                }}>✓ OK</span>
-                <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>No other changes detected</span>
+                <span style={{ fontSize: 12 }}>📋</span>
+                <span style={{ fontSize: 10, color: 'var(--color-text-secondary)' }}>Step-by-step emergency checklists included for each policy</span>
               </div>
             </div>
           </div>
